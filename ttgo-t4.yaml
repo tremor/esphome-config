@@ -6,6 +6,12 @@ esphome:
   name: ${esp_hostname}
   platform: ESP32
   board: nodemcu-32s
+  on_boot:
+    then:
+    - wait_until:
+       api.connected:
+    - lambda: |-
+          id(markerpoint).publish_state(0);
 
 wifi:
   ssid: !secret wifi_ssid
@@ -30,6 +36,11 @@ api:
 ota:
   password: !secret password
 
+globals:
+  - id: mark
+    type: int
+    restore_value: no
+    initial_value: '0' 
 color:
   - id: RED
     red: 100%
@@ -61,6 +72,7 @@ color:
     red: 0%
     green: 0%
     blue: 0%
+ 
 font:
   - file: "fonts/GoogleSans-Bold.ttf"
     id: sans_bold_38
@@ -86,47 +98,111 @@ time:
     timezone: Europe/Berlin
     
 sensor:
+  - platform: template
+    id: markerpoint
+    on_value_range:
+      - above: 11
+        then:
+         - lambda: |-
+            id(markerpoint).state = 0;
+      - below: 0
+        then:
+        - lambda: |-
+              id(markerpoint).state = 11;
   - platform: wifi_signal
     name: "WiFi Signal Sensor TTGO Display"
     update_interval: 60s
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
-    
+    internal: true
   - platform: homeassistant
     entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_temperature
     id: schlafzimmer_temp
+    internal: true
   - platform: homeassistant
     entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_humidity
     id: schlafzimmer_humid
+    internal: true
   - platform: homeassistant
     entity_id: sensor.bh1750_illuminance_2
     id: schlafzimmer_illumination
+    internal: true
   - platform: homeassistant
     entity_id: sensor.mh_z19_co2_value_2
     id: schlafzimmer_co2
+    internal: true
 
   - platform: homeassistant
     entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_humidity
     id: wohnzimmer_humid
+    internal: true
   - platform: homeassistant
     entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_temperature
     id: wohnzimmer_temp
+    internal: true
   - platform: homeassistant
     entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_illuminance
     id: wohnzimmer_illumination
+    internal: true
 
 
     
   - platform: homeassistant
     entity_id: sensor.tempf_lacrosse204_temperature
     id: dachboden_temp
+    internal: true
   - platform: homeassistant
     entity_id: sensor.tempf_lacrosse204_humidity
     id: dachboden_humid
+    internal: true
   - platform: homeassistant
     entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_3d351a00_illuminance
     id: dachboden_illumination
+    internal: true
+
+script:
+  - id: check_markerpoint_below
+    then:
+      - if:
+         condition:
+           lambda: 'return id(markerpoint).state == -1;'
+         then:
+           - lambda: |-
+              id(markerpoint).state = 11;
+           - logger.log: "Below 0"
+  - id: check_markerpoint_above
+    then:
+      - if:
+         condition:
+           lambda: 'return id(markerpoint).state == 12;'
+         then:
+           - lambda: |-
+              id(markerpoint).state = 0;
+           - logger.log: "Above 11"
+           
+  - id: button_toggle
+    then:
+           lambda: |-
+                  if ((id(markerpoint).state == 0)) {
+                    id(switch_0).toggle();
+                  }
+                  else if ((id(markerpoint).state == 1)) {
+                    id(switch_1).toggle();
+                  }
+                  else if ((id(markerpoint).state == 2)) {
+                    id(switch_2).toggle();
+                  }
+                  else if ((id(markerpoint).state == 3)) {
+                    id(switch_2).toggle();
+                  }
+                  else if ((id(markerpoint).state == 3)) {
+                    id(switch_2).toggle();
+                  }
+                  else if ((id(markerpoint).state == 4)) {
+                    id(switch_2).toggle();
+                  }
+
 binary_sensor:
   - platform: gpio
     name: "BUTTON_LINKS"
@@ -135,13 +211,15 @@ binary_sensor:
       inverted: true
     on_press:
       then:
+        - lambda: |-
+              id(markerpoint).state += 1; 
+        - script.execute: check_markerpoint_above
         - switch.turn_on: background
         - display.page.show: wohnzimmer
-    on_release:
-      then:
-        - switch.turn_off: background
-    filters:
-      - delayed_off: 5s
+        - logger.log:       
+            format: "Button Down %.0f"
+            args: [ 'id(markerpoint).state' ]
+        
   - platform: gpio
     name: "BUTTON_RECHTS"
     pin:
@@ -149,13 +227,14 @@ binary_sensor:
       inverted: true
     on_press:
       then:
+        - lambda: |-
+              id(markerpoint).state -= 1;
+        - script.execute: check_markerpoint_below
         - switch.turn_on: background
-        - display.page.show: schlafzimmer
-    on_release:
-      then:
-        - switch.turn_off: background
-    filters:
-      - delayed_off: 5s
+        - display.page.show: wohnzimmer
+        - logger.log:       
+            format: "Button Up %.0f"
+            args: [ 'id(markerpoint).state' ]
   - platform: gpio
     name: "BUTTON_MITTE"
     pin:
@@ -163,33 +242,81 @@ binary_sensor:
       inverted: true
     on_press:
       then:
-        - switch.turn_on: background
-        - display.page.show: dachboden
-    on_release:
-      then:
-        - switch.turn_off: background
-    filters:
-      - delayed_off: 5s
+        - script.execute: button_toggle
+        - display.page.show: wohnzimmer
+
   - platform: homeassistant
     entity_id: binary_sensor.fenster_wohnzimmer
     id: wohnzimmer_fenster
+    internal: true
+  - platform: homeassistant
+    entity_id: switch.kasa_schalter_1
+    id: schlafzimmer_sensor_0
+    internal: true
   - platform: homeassistant
     entity_id: switch.lowboard_on_off
-    id: wohnzimmer_LowBoard_PS4
+    id: schlafzimmer_sensor_1
+    internal: true
   - platform: homeassistant
     entity_id: switch.tz3000_1obwwnmq_ts011f_99ad90fe_on_off_2
     id: wohnzimmer_LowBoard_Fernseher
+    internal: true
   - platform: homeassistant
     entity_id: light.wohnzimmer_regal
     id: wohnzimmer_Licht_Regal
+    internal: true
   - platform: homeassistant
     entity_id: humidifier.wohnzimmer_befeuchter
     id: wohnzimmer_Befeuchter
+    internal: true
+  - platform: homeassistant
+    entity_id: switch.adguard_filtering
+    id: sensor_adguard_filtering
+    internal: true
+    
 switch:
   - platform: gpio
     pin: 4
     id: background
-    
+  - platform: template
+    internal: true
+    id: switch_0
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_0
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_0
+  - platform: template
+    internal: true
+    id: switch_1
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_1
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_1
+  - platform: template
+    internal: true
+    id: switch_2
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_2
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_2
 graph:
   # Show bare-minimum auto-ranged graph
   - id: blood_sugar_mmol_graph
@@ -215,6 +342,7 @@ display:
     reset_pin: 5
     rotation: 0
     id: my_display
+    update_interval: 500ms
     #auto_clear_enabled: false
     pages:
      - id: wohnzimmer
@@ -225,44 +353,58 @@ display:
           #define nextline 25
           #define seperator 90
           int y = 1;
-          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Wohnzimmer");
+          it.rectangle(1, (id(markerpoint).state*nextline)+firstline, xres-1, nextline);
+          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Schlafzimmer");
           y+=firstline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Temperatur");
-          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f °C", id(wohnzimmer_temp).state);
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "WLED");
+          if (id(schlafzimmer_sensor_0).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Lowboard PS4");
+          if (id(schlafzimmer_sensor_1).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "AdGuard");
+          if (id(sensor_adguard_filtering).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftfeuchte");
-          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f%%", id(wohnzimmer_humid).state);
+          it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f%%", id(schlafzimmer_humid).state);
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Helligkeit");
-          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f lx", id(wohnzimmer_illumination).state);         
+          it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f lx", id(wohnzimmer_illumination).state);         
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fenster");
           if (id(wohnzimmer_fenster).state) {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Offen");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Offen");
           }
           else {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Geschlossen");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Geschlossen");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fernseher");
           if (id(wohnzimmer_LowBoard_Fernseher).state) {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
-          }
-          y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "PS4/Chromecast");
-          if (id(wohnzimmer_LowBoard_PS4).state) {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
-          }
-          else {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Licht Regal");
           if (id(wohnzimmer_Licht_Regal).state) {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
           }
           else {
            it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
@@ -270,14 +412,14 @@ display:
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftbefeuchter");
           if (id(wohnzimmer_Befeuchter).state) {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Blutzucker");
-          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
+          it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
      - id: schlafzimmer
        lambda: |-
           int y = 1;

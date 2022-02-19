@@ -192,6 +192,10 @@ binary_sensor:
     entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_on_off
     id: tuer_durchgang
     internal: true
+  - platform: homeassistant
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_ad030b07_on_off
+    id: garage_tor
+    internal: true
     
 sensor:
   - platform: homeassistant
@@ -323,6 +327,18 @@ script:
 
   - id: enter_sleep
     then:
+      - component.update: batt_volt
+      - component.update: batt
+      - if:
+          condition:
+            lambda: 'return id(batt).state < 100;'
+          then:
+            - script.execute: enter_sleep_now
+          else:
+            - logger.log: "Charging - no sleep"
+        
+  - id: enter_sleep_now
+    then:
       - if:
           condition:
             lambda: |- 
@@ -341,9 +357,7 @@ script:
             - deep_sleep.enter: 
                 id: deep_sleep_1 
                 sleep_duration: ${sleep_time}
-        
 
-    
 time:
   - platform: homeassistant
     id: ntp
@@ -402,6 +416,7 @@ display:
           #define xsym4 xsym3+80
           #define xsym5 xsym4+80
           #define xsym6 xsym5+80
+          #define xsym7 xsym6+80
           
           //draw clear background (forces whole display to redraw)
           it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
@@ -531,7 +546,7 @@ display:
 
           //Fensterstatus
           y+= val_pad;  
-          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "SZ  KU  WZ  DA  WG  DU");
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "SZ  KU  WZ  DA  WG  DU  GA");
           // it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A"); //CO2
           y+= val_pad;      
           
@@ -559,6 +574,10 @@ display:
           it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
           if (id(tuer_durchgang).state == 0) {
           it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          if (id(garage_tor).state == 1) {
+          it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(garage_tor).state == 0) {
+          it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
 
       
           //Divider
