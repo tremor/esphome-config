@@ -1,0 +1,89 @@
+esphome:
+  name: co2_1
+  platform: ESP32
+  board: esp-wrover-kit
+#  libraries: ciniml/WireGuard-ESP32
+#  includes: wg-settings.h
+
+
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO16
+  use_address: 10.10.31.22
+
+# Enable logging
+logger:
+  baud_rate: 0
+
+# Enable Home Assistant API
+api:
+  password: !secret password
+
+ota:
+  password: !secret password
+
+mqtt:
+  broker: 10.10.30.17
+  username: !secret mqtt_user
+  password: !secret mqtt_password
+  discovery: True
+
+uart:
+  rx_pin: 3
+  tx_pin: 1
+  baud_rate: 9600
+
+#time:
+#  - platform: sntp
+#    on_time_sync:
+#        then:
+#        - lambda: |
+#            static const char* TAG = "wireguard";
+#            ESP_LOGD(TAG, "Starting...");
+#            if( !wg.is_initialized() ) {
+#                        ESP_LOGD(TAG, "Initializing WG interface...");
+#                        if( !wg.begin(
+#                                local_ip,
+#                                private_key,
+#                                endpoint_address,
+#                                public_key,
+#                                endpoint_port) ) {
+#                            ESP_LOGD(TAG, "Failed to initialize WG interface.");
+#                        }
+#                    }
+sensor:
+  - platform: mhz19
+    co2:
+      name: "MH-Z19 CO2 Value"
+    temperature:
+      name: "MH-Z19 Temperature"
+    update_interval: 60s
+    automatic_baseline_calibration: false
+  - platform: xiaomi_lywsd03mmc
+    mac_address: A4:C1:38:17:69:7A
+    bindkey: "cd4feb2e97fbdcca84214c56a77bf24d"
+    temperature:
+      name: "PETG Aktive Box Temperature"
+    humidity:
+      name: "PETG Aktive Box Humidity"
+    battery_level:
+      name: "PETG Aktive Box Battery Level"
+
+esp32_ble_tracker:
+binary_sensor:
+  # Presence based on MAC address
+  - platform: ble_presence
+    mac_address: !secret g6_mac
+    name: "DexCom MAC at CO2 detected"
+    # Presence based on BLE Service UUID
+  - platform: ble_presence
+    service_uuid: '1201'
+    name: "DexCom Service 1201 UUID detected"
+    # Presence based on BLE Service UUID
+  - platform: ble_presence
+    service_uuid: '1808'
+    name: "DexCom 1808 Service UUID detected"

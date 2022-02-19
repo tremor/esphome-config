@@ -1,0 +1,288 @@
+substitutions:
+  esp_name: TTGO Display #Device Name
+  esp_hostname: ttgo_display
+  
+esphome:
+  name: ${esp_hostname}
+  platform: ESP32
+  board: featheresp32
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 10.11.30.125
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_hostname}"
+    password: !secret password
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret password
+
+ota:
+  password: !secret password
+
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: my_yellow
+    red: 100%
+    green: 100%
+    blue: 0%
+  - id: my_green
+    red: 0%
+    green: 100%
+    blue: 0%
+  - id: my_blue
+    red: 0%
+    green: 0%
+    blue: 100%
+  - id: my_gray
+    red: 50%
+    green: 50%
+    blue: 50%
+
+font:
+  - file: "fonts/GoogleSans-Bold.ttf"
+    id: sans_bold_38
+    size: 38
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_56
+    size: 56    
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_28
+    size: 28    
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    id: ${esp_hostname}_button_up
+    name: "Button_up"
+    on_click:
+    - min_length: 50ms
+      max_length: 350ms
+      then:
+        - homeassistant.service:
+            service: media_player.volume_up
+            data:
+              entity_id: media_player.schlafzimmer_schreibtis
+    - min_length: 500ms
+      max_length: 1500ms
+      then:
+        - homeassistant.service:
+            service: media_player.media_previous_track
+            data:
+              entity_id: media_player.schlafzimmer_schreibtis
+
+  - platform: gpio
+    pin:
+      number: GPIO35
+      inverted: true
+    name: "Button_down"
+    id: ${esp_hostname}_button_down
+    on_click:
+    - min_length: 50ms
+      max_length: 350ms
+      then:
+        - homeassistant.service:
+            service: media_player.volume_down
+            data:
+              entity_id: media_player.schlafzimmer_schreibtis
+    - min_length: 500ms
+      max_length: 1500ms
+      then:
+        - homeassistant.service:
+            service: media_player.media_next_track
+            data:
+              entity_id: media_player.schlafzimmer_schreibtis
+  - platform: status
+    name: "Node Status"
+    id: system_status
+    
+text_sensor:
+  - platform: sun
+    id: sunrise
+    name: Sun Next Sunrise
+    type: sunrise
+    format: "%H:%M"
+    internal: true
+    update_interval: never
+    
+  - platform: sun
+    id: sunset
+    name: Sun Next Sunset
+    type: sunset
+    format: "%H:%M"    
+    internal: true
+    update_interval: never
+  - platform: homeassistant
+    entity_id: media_player.schlafzimmer_schreibtis
+    id: mediaplayer_schlafzimmer_schreibtisch
+    internal: true  
+  - platform: homeassistant
+    entity_id: sensor.media_player_schlafzimmer_schreibtis_track
+    id: mediaplayer_schlafzimmer_schreibtisch_track
+    internal: true  
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor TTGO Display"
+    update_interval: 60s
+  - platform: bh1750
+    name: "BH1750 Illuminance"
+    address: 0x23
+    measurement_duration: 69
+    update_interval: 10s
+  
+  - platform: vl53l0x
+    name: "VL53L0x Distance"
+    address: 0x29
+    update_interval: 250ms
+    unit_of_measurement: "m"
+    long_range: true
+    id: tof
+    on_value_range:
+        - above: 0.45
+          then:
+            - switch.turn_off: backlight
+        - below: 0.35
+          then:
+            - switch.turn_on: backlight
+            
+  - platform: homeassistant
+    entity_id: sensor.blood_sugar_mmol
+    id: blood_sugar_mmol
+    
+  - platform: adc
+    pin: 34
+    name: "${esp_name} Battery Voltage"
+    id: batt_volt
+    attenuation: 11db
+    update_interval: 2min
+    filters:
+      - multiply: 2
+
+  - platform: template
+    name: "${esp_name} Battery"
+    id: batt
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    update_interval: 2min
+    device_class: battery
+    lambda: |-
+      int y = (1-(4.1-id(batt_volt).state)/(4.1-3.3))*100;
+      if (y < 100) {return y;} else {return 100;};
+    
+graph:
+  # Show bare-minimum auto-ranged graph
+  - id: blood_sugar_mmol_graph
+    sensor: blood_sugar_mmol
+    duration: 2h
+    width: 240
+    height: 60
+    max_value: 15
+    min_value: 2
+    x_grid: 30min
+    
+    
+globals:
+   - id: coords
+     type: int
+     restore_value: no
+     initial_value: '0'
+   - id: length
+     type: int
+     restore_value: no
+     initial_value: '0'
+interval:
+  - interval: 50ms
+    then:
+        lambda: |-
+            if (id(coords) < -(id(length))) {
+             id(coords) = 0;
+                }
+            else  {
+               id(coords) -= 2;
+            }
+# We can still control the backlight independently
+switch:
+  - platform: gpio
+    pin: GPIO4
+    name: "Backlight"
+    id: backlight
+
+time:
+  - platform: homeassistant
+    id: ntp
+    timezone: Europe/Berlin
+    on_time_sync:
+      - then:
+        - component.update: sunrise
+        - component.update: sunset
+
+sun:
+  latitude: 54.0887°
+  longitude: 12.1405°   
+  
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+  id: bus_a
+  
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO19
+
+display:
+  - platform: st7789v
+    backlight_pin: GPIO4
+    cs_pin: GPIO5
+    dc_pin: GPIO16
+    reset_pin: GPIO23
+    rotation: 90
+    update_interval: 500ms
+    lambda: |-
+      it.rectangle(0,  0, it.get_width(), it.get_height(), id(my_blue));
+      if (id(mediaplayer_schlafzimmer_schreibtisch).state == "playing") {
+        
+        //it.printf(240 / 2, 140 / 3, id(sans_medium_28), id(my_yellow), TextAlign::CENTER, id(mediaplayer_schlafzimmer_schreibtisch_track).state.c_str());
+        std::string printout=id(mediaplayer_schlafzimmer_schreibtisch_track).state.c_str();
+        int clength = printout.length();
+        id(length)=clength*25;
+        it.print(id(coords), 32, id(sans_medium_28), printout.c_str());;
+      }
+      else {
+        it.strftime(240 / 2, 50, id(sans_medium_28), id(my_gray), TextAlign::CENTER, "%H:%M:%S", id(ntp).now());
+      }
+      //it.strftime((240 / 2), (140 / 3) * 2 + 5, id(sans_medium_56), id(my_gray), TextAlign::CENTER, "%H:%M:%S", id(ntp).now());
+      it.graph(0, 65, id(blood_sugar_mmol_graph),my_red);
+      it.printf(5, 2, id(sans_medium_28), id(my_yellow), TextAlign::TOP_LEFT, "%.2f", id(tof).state);
+      it.printf(70, 2, id(sans_medium_28), id(my_gray), TextAlign::TOP_LEFT, "%.0f%%", id(batt).state);
+      if (id(blood_sugar_mmol).state < 4) {
+        it.printf(5, 70, id( sans_bold_38), id(my_red), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+      }
+      else {
+        it.printf(5, 70, id( sans_bold_38), id(my_yellow), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+      }
+
+
+      if (id(system_status).state) {
+        it.print(235, 2, id(sans_medium_28), id(my_green), TextAlign::TOP_RIGHT, "Online");
+      }
+      else {
+        it.print(235, 2, id(sans_medium_28), id(my_red), TextAlign::TOP_RIGHT, "Offline");
+      }

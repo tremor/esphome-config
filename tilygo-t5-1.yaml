@@ -1,0 +1,603 @@
+substitutions:
+  esp_name: ESP Display #Device Name
+  esp_hostname: tilygo-t5-1
+  run_time: 5min #can be as long as needed to get data 
+  sleep_time: 15min # normal sleep time
+  away_sleep_time: 1h # sleep time when nobody's at home
+  night_sleep_time: 6h # 1st sleep time after midnight
+  
+esphome:
+  name: ${esp_hostname}
+  platform: esp32
+  board: esp32dev
+  platformio_options:
+    upload_speed: 1500000
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret password
+
+ota:
+  password: !secret password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 10.11.30.11
+  
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_hostname}"
+    password: !secret password
+
+
+
+
+mqtt:
+  broker: 10.10.30.17
+  username: espurna
+  password: PBrZtfLf5x88Ur8b
+  discovery: True
+  on_message:
+  - topic: ${esp_hostname}/ota_mode
+    payload: 'ON'
+    then:
+      - deep_sleep.prevent: deep_sleep_1
+  - topic: ${esp_hostname}/sleep_mode
+    payload: 'ON'
+    then:
+      - deep_sleep.enter: deep_sleep_1
+      
+deep_sleep:
+  run_duration: ${run_time} 
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+  esp32_ext1_wakeup:
+    pins: GPIO39
+    mode: ALL_LOW
+    
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+  
+font:
+  - file: "fonts/GoogleSans-Bold.ttf"
+    id: font_name
+    size: 38
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: font_value
+    size: 56    
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: font_footer
+    size: 28    
+   # https://pictogrammers.github.io/@mdi/font/5.3.45/
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_icons
+    size: 160
+    glyphs:
+      - "\U000F0594" # clear-night
+      - "\U000F0590" # cloudy
+      - "\U000F0595" # partlycloudy
+      - "\U000F0591" # fog      
+      - "\U000F0592" # hail
+      - "\U000F0593" # lightning
+      - "\U000F067E" # lightning-rainy
+      - "\U000F0596" # pouring
+      - "\U000F0597" # rainy
+      - "\U000F0F36" # snowy
+      - "\U000F067F" # snowy-rainy
+      - "\U000F0599" # sunny
+      - "\U000F059D" # windy
+      - "\U000F059E" # windy-variant
+      - "\U000F0F38" # exceptional
+      
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_icons_small
+    size: 56
+    glyphs:
+      - "\U000F059C" # Sunrise
+      - "\U000F059B" # Sunset
+      - "\U000F10C2" # Temperature High
+      - "\U000F10C3" # Temperature Low
+      - "\U000F07E4" # CO2
+      - "\U000F054B" # umbrella
+      - "\U000F13E2" # umbrella-closed
+      - "\U000F0592" # hail
+      - "\U000F0593" # lightning
+      - "\U000F067E" # lightning-rainy
+      - "\U000F0597" # rainy
+      - "\U000F0F36" # snowy
+      - "\U000F0594" # clear-night
+      - "\U000F0599" # sunny
+      - "\U000F07CA" # fuel
+      - "\U000F024A" # flower
+      - "\U000F051F" # time-remaining
+      - "\U000F140B" # Energy
+      - "\U000F0F29" # Frost Alert
+      - "\U000F1126" # Blood Sugar
+      - "\U000F00F6" # Tageswaerme
+      - "\U000F03C8" # Vorlauftemperatur
+      - "\U000F081C" # Tuer offen
+      - "\U000F081B" # Tuer geschlossen
+      
+  - file: 'fonts/materialdesignicons-webfont.ttf'
+    id: font_icons_tiny
+    size: 28
+    glyphs:
+      - "\U000F04B2" # sleep
+      - "\U000F02DC" # home
+      - "\U000F13D7" # not_home
+      - "\U000F12A3" # battery-high
+      - "\U000F12A2" # battery-medium
+      - "\U000F12A1" # battery-low
+      - "\U000F008E" # battery-outline
+
+button:
+  - platform: restart
+    name: "${esp_name} Restart"
+
+  - platform: template
+    name: "${esp_name} Refresh"
+    icon: "mdi:update"
+    on_press:
+      then:
+      - component.update: t5_display
+
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO39
+      inverted: true
+    name: "${esp_name} Button 1"
+    on_press:
+      then:
+       - component.update: t5_display
+      
+  - platform: gpio
+    pin: 
+      number: GPIO34
+      inverted: true
+    name: "${esp_name} Button 2"
+
+  - platform: gpio
+    pin: 
+      number: GPIO35
+      inverted: true
+    name: "${esp_name} Button 3"
+    
+  - platform: homeassistant
+    entity_id: binary_sensor.fenster_schlafzimmer
+    id: fenster_schlafzimmer
+    internal: true
+  - platform: homeassistant
+    entity_id: binary_sensor.shutter_contact_invisible
+    id: fenster_kueche
+    internal: true
+  - platform: homeassistant
+    entity_id: binary_sensor.fenster_wohnzimmer
+    id: fenster_wohnzimer
+    internal: true
+  - platform: homeassistant
+    entity_id: binary_sensor.fenster_und_turkontakt
+    id: fenster_dachboden
+    internal: true
+  - platform: homeassistant
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_c84e0507_on_off
+    id: tuer_wintergarten_durchgang
+    internal: true
+  - platform: homeassistant
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_on_off
+    id: tuer_durchgang
+    internal: true
+    
+sensor:
+  - platform: homeassistant
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_temperature
+    id: wohnzimmer_temp
+  - platform: homeassistant
+    entity_id: sensor.temp_heizung_aussentemperatur
+    id: out_temp
+  - platform: homeassistant
+    entity_id: sensor.heizkorperthermostat_kompakt_temperature
+    id: schlafzimmer_temp
+  - platform: homeassistant
+    entity_id: sensor.heizung_tageswaerme_vortag
+    id: tageswaerme_vortag
+  - platform: homeassistant
+    entity_id: sensor.blood_sugar_mmol
+    id: blood_sugar_mmol
+  - platform: homeassistant
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_humidity
+    id: wohnzimmer_humid
+  - platform: homeassistant
+    entity_id: sensor.heizung_vorlaufisttemperatur
+    id: heizung_isttemperatur
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.openweathermap_forecast_precipitation_probability
+    id: prec_perc
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.openweathermap_feels_like_temperature
+    id: fc_low
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.openweathermap_forecast_temperature
+    id: fc_high
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.mh_z19_co2_value_2
+    id: schlafzimmer_co2
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.lumi_lumi_weather_39c7b106_humidity
+    id: bad_unten_humid
+    internal: true
+  - platform: lilygo_t5_47_battery
+    id: batt_volt
+    update_interval: never
+    voltage:
+          name: "${esp_name} Battery Voltage"
+  - platform: adc
+    pin: GPIO36
+    name: "${esp_name} Battery Voltage"
+    id: batt_voltold
+    attenuation: 11db
+    update_interval: 2min
+    filters:
+      - multiply: 2
+  - platform: template
+    name: "${esp_name} Battery"
+    id: batt
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    lambda: |-
+      int y = (1-(4.1-id(batt_volt).voltage->state)/(4.1-3.3))*100;
+      if (y < 100) {return y;} else {return 100;};
+    update_interval: never
+
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/vbaksa/esphome
+      ref: dev
+    components: [lilygo_t5_47_display, lilygo_t5_47_battery]
+    refresh: 5s
+
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: sensor.openweathermap_precipitation_kind
+    id: fc_prec
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.openweathermap_forecast_condition
+    id: fc_weather
+    internal: true
+    on_value: # Actions to perform once data for the last sensor has been received
+      then:
+        - script.execute: all_data_received     
+  - platform: homeassistant
+    entity_id:  sensor.weathermet_wind_direction
+    id: wind_dir
+  - platform: sun
+    id: sunrise
+    name: Sun Next Sunrise
+    type: sunrise
+    format: "%H:%M"
+    internal: true
+    update_interval: never
+  
+  - platform: sun
+    id: sunset
+    name: Sun Next Sunset
+    type: sunset
+    format: "%H:%M"    
+    internal: true
+    update_interval: never
+    
+script:
+  - id: refresh_display
+    then:
+      - repeat:
+          count: 1
+          then:
+          - display.page.show: black
+          - component.update: t5_display
+          - display.page.show: blank
+          - component.update: t5_display
+
+  - id: all_data_received
+    then:
+      - component.update: batt_volt
+      - component.update: batt
+      - display.page.show: main
+      - component.update: t5_display
+      - script.execute: enter_sleep     
+
+  - id: enter_sleep
+    then:
+      - if:
+          condition:
+            lambda: |- 
+              auto time = id(ntp).now();
+              if (!time.is_valid()) { 
+                return false;
+              }
+              return (time.hour < 6); 
+          then:
+            - logger.log: "It's nighttime, entering long sleep for ${night_sleep_time}"          
+            - deep_sleep.enter: 
+                id: deep_sleep_1 
+                sleep_duration: ${night_sleep_time}
+          else:
+            - logger.log: "It's daytime, entering short sleep for ${sleep_time}"             
+            - deep_sleep.enter: 
+                id: deep_sleep_1 
+                sleep_duration: ${sleep_time}
+        
+
+    
+time:
+  - platform: homeassistant
+    id: ntp
+    timezone: Europe/Berlin
+    on_time_sync:
+      - then:
+        - component.update: sunrise
+        - component.update: sunset
+
+sun:
+  latitude: 54.0887°
+  longitude: 12.1405°   
+  
+display:
+#  - platform: t547
+  - platform: lilygo_t5_47_display
+    power_off_delay_enabled: true  
+    clear: false
+    id: t5_display
+    rotation: 90
+    update_interval: never
+    pages:
+     - id: blank
+       lambda: |-
+          #define xres 540 
+          #define yres 960        
+          //draw clear background
+          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+          it.print(xres/2, yres/2, id(font_name), COLOR_ON, TextAlign::CENTER, "Refreshing...");          
+     - id: black
+       lambda: |-
+          #define xres 540 
+          #define yres 960        
+          //draw filled background
+          it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
+          it.print(xres/2, yres/2, id(font_name), COLOR_OFF, TextAlign::CENTER, "Refreshing...");
+     - id: main
+       lambda: |-
+          #define xres 540 
+          #define yres 960
+          #define x_pad 10 // border padding
+          #define y_pad 10 // border padding      
+          #define cat_pad 55 // padding before category ex_75
+          #define val_pad 55 // padding before value ex_60
+          #define icon_pad 30 //padding after icons      
+          #define unit_pad 10 //padding between value and unit
+          #define x1n 20 //x position 1st column name
+          #define x1v xres*0.35 //x position 1st column value
+          #define x1i 40 //x position 1st column icon
+          #define x2n xres/2 //x position 2nd column name
+          #define x2v xres*0.8 //x position 2nd column value
+          #define x2i xres/2+20 //x position 1st column icon
+          #define xsym1 40
+          #define xsym2 xsym1+70
+          #define xsym3 xsym2+70
+          #define xsym4 xsym3+80
+          #define xsym5 xsym4+80
+          #define xsym6 xsym5+80
+          
+          //draw clear background (forces whole display to redraw)
+          it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
+          it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
+          
+          int y = 0;
+      
+          // Date
+          it.strftime(xres/2, y+y_pad, id(font_name), TextAlign::TOP_CENTER, "%A %d.%b.%Y", id(ntp).now());
+           
+          //Divider
+    
+          #define div_thickness 4
+          it.filled_rectangle(x_pad, 70, xres-2*x_pad, div_thickness);
+    
+          y+=175;
+
+      
+      
+          #define weather_icon_x xres/4+15
+          #define gauge_radius 85
+          #define gauge_thickness 5
+          //it.filled_circle(weather_icon_x, y, gauge_radius, COLOR_ON);
+          //it.filled_circle(weather_icon_x, y, gauge_radius-gauge_thickness, COLOR_OFF);
+          //Weather forecast Icon
+          if (id(fc_weather).state == "clear-night") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0594");}
+          if (id(fc_weather).state == "cloudy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0590");}
+          if (id(fc_weather).state == "partlycloudy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0595");}
+          if (id(fc_weather).state == "fog") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0591");}
+          if (id(fc_weather).state == "hail") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0592");}
+          if (id(fc_weather).state == "lightning") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0593");}
+          if (id(fc_weather).state == "lightning-rainy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F067E");}
+          if (id(fc_weather).state == "pouring") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0596");}
+          if (id(fc_weather).state == "rainy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0597");}
+          if (id(fc_weather).state == "snowy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0F36");}
+          if (id(fc_weather).state == "snowy-rainy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F067F");}
+          if (id(fc_weather).state == "sunny") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0599");}
+          if (id(fc_weather).state == "windy") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F059D");}
+          if (id(fc_weather).state == "windy-variant") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F059E");}
+          if (id(fc_weather).state == "exceptional") {
+          it.printf(weather_icon_x, y, id(font_icons), TextAlign::CENTER, "\U000F0F38");} 
+
+          y-=25;
+          
+          #define highlow_x x2v+40
+          // High/Low Temperature
+          it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F10C2"); // temp high
+          it.printf(highlow_x-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(fc_high).state);
+          it.print(highlow_x+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+          
+          y+=75;          //ex_85
+
+          it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F10C3"); // temp low
+          it.printf(highlow_x-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(fc_low).state);
+          it.print(highlow_x+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+    
+          // Sunrise / Sunset
+          y+=70;  //ex_90
+    
+          it.printf(x1i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F059C"); // Sunrise
+          it.printf(x1v-25, y, id(font_value), TextAlign::BASELINE_CENTER, "%s", id(sunrise).state.c_str());      
+    
+          it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F059B"); // Sunset
+          it.printf((xres/4)*3, y, id(font_value), TextAlign::BASELINE_CENTER, "%s", id(sunset).state.c_str());  
+    
+          // Outside Temp + Precipitation
+          y+=val_pad;     
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Aussentemp.");
+          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Regenwahrsch.");
+          y+=val_pad;      
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(out_temp).state);
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+ 
+          //Precipitation Icon
+          if (id(prec_perc).state == 0) {
+            it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F13E2");  
+          } else {
+            if (id(fc_prec).state == "None") {
+            it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F054B");}
+            if (id(fc_prec).state == "Hail") {
+            it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F0592");}
+            if (id(fc_prec).state == "Rain") {
+            it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F0597");}
+            if (id(fc_prec).state == "Snow") {
+            it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F0F36");}
+          }
+
+          //Precipitation
+          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%3.0f", id(prec_perc).state);      
+          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "%");
+        
+
+          //Schlafzimmer
+          y +=cat_pad;
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Schlafzimmer");
+          it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F07E4"); //CO2
+          y+= val_pad;      
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(schlafzimmer_temp).state);
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(schlafzimmer_co2).state);      
+          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "ppm");
+          
+          //Wohnzimmer
+          y+= val_pad;  
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Wohnzimmer");
+          it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A"); //CO2
+          y+= val_pad;      
+          
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(wohnzimmer_temp).state);
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(wohnzimmer_humid).state);      
+          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "%");
+
+          //Fensterstatus
+          y+= val_pad;  
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "SZ  KU  WZ  DA  WG  DU");
+          // it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A"); //CO2
+          y+= val_pad;      
+          
+          if (id(fenster_schlafzimmer).state == 1) {
+          it.printf(xsym1, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(fenster_schlafzimmer).state == 0) {
+          it.printf(xsym1, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          if (id(fenster_kueche).state == 1) {
+          it.printf(xsym2, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(fenster_kueche).state == 0) {
+          it.printf(xsym2, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          if (id(fenster_wohnzimer).state == 1) {
+          it.printf(xsym3, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(fenster_wohnzimer).state == 0) {
+          it.printf(xsym3, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          if (id(fenster_dachboden).state == 1) {
+          it.printf(xsym4, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(fenster_dachboden).state == 0) {
+          it.printf(xsym4, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          if (id(tuer_wintergarten_durchgang).state == 1) {
+          it.printf(xsym5, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(tuer_wintergarten_durchgang).state == 0) {
+          it.printf(xsym5, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          if (id(tuer_durchgang).state == 1) {
+          it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          if (id(tuer_durchgang).state == 0) {
+          it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+
+      
+          //Divider
+          #define div_pad 40
+          #define div_thickness 4
+          it.filled_rectangle(x_pad, y+div_pad, xres-2*x_pad, div_thickness);
+      
+          y+=div_pad*3+div_thickness;
+  
+          // Energie und Vorlauf
+          it.printf(x1i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F03C8"); //vorlauf_temperatur
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(heizung_isttemperatur).state);
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+          it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F1126"); // blood-sugar
+          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(blood_sugar_mmol).state);
+          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "mmol");
+          y+=cat_pad;
+          // Footer
+          y = yres-y_pad/2;
+          it.strftime(x_pad, y, id(font_footer), TextAlign::BASELINE_LEFT, "Updated: %H:%M", id(ntp).now());
+          it.printf(xres-3*x_pad+10, y, id(font_footer), TextAlign::BASELINE_RIGHT, "%.2fV/%.0f%%", id(batt_volt).voltage->state, id(batt).state);
+
+          
+          // Battery Icon
+          if (id(batt).state > 75) {
+            it.printf(xres-x_pad, y, id(font_icons_tiny), TextAlign::BASELINE_CENTER, "\U000F12A3"); // battery-high 
+          }
+          else if (id(batt).state > 50) {
+                it.printf(xres-x_pad, y, id(font_icons_tiny), TextAlign::BASELINE_CENTER, "\U000F12A2"); // battery-medium
+          } 
+          else if (id(batt).state > 25) {
+                it.printf(xres-x_pad, y, id(font_icons_tiny), TextAlign::BASELINE_CENTER, "\U000F12A1"); // battery-low
+          } else {      
+                it.printf(xres-x_pad, y, id(font_icons_tiny), TextAlign::BASELINE_CENTER, "\U000F008E"); // battery-outline
+          }      
+                
+          auto time = id(ntp).now();
+          if (time.is_valid() && time.hour < 6)  {
+              it.printf(xres/2, y, id(font_icons_tiny), TextAlign::BASELINE_CENTER, "\U000F04B2"); // sleep     
+          } else {
+              it.printf(xres/2, y, id(font_icons_tiny), TextAlign::BASELINE_CENTER, "\U000F02DC"); // home
+          } 

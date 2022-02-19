@@ -1,0 +1,314 @@
+substitutions:
+  esp_name: TTGO T4 Display #Device Name
+  esp_hostname: ttgo-t4
+  
+esphome:
+  name: ${esp_hostname}
+  platform: ESP32
+  board: nodemcu-32s
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 10.11.30.75
+
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_hostname}"
+    password: !secret password
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret password
+
+ota:
+  password: !secret password
+
+color:
+  - id: RED
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: YELLOW
+    red: 100%
+    green: 100%
+    blue: 0%
+  - id: GREEN
+    red: 0%
+    green: 100%
+    blue: 0%
+  - id: BLUE
+    red: 0%
+    green: 0%
+    blue: 100%
+    white: 1.0000
+  - id: GRAY
+    red: 50%
+    green: 50%
+    blue: 50%
+  - id: WHITE
+    red:   1.0000
+    green: 1.0000
+    blue:  1.0000
+    white: 0.0000
+  - id: BLACK
+    red: 0%
+    green: 0%
+    blue: 0%
+font:
+  - file: "fonts/GoogleSans-Bold.ttf"
+    id: sans_bold_38
+    size: 38
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_56
+    size: 56    
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_28
+    size: 28
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_20
+    size: 20
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_14
+    size: 14
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: sans_medium_10
+    size: 10
+time:
+  - platform: homeassistant
+    id: ntp
+    timezone: Europe/Berlin
+    
+sensor:
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor TTGO Display"
+    update_interval: 60s
+  - platform: homeassistant
+    entity_id: sensor.blood_sugar_mmol
+    id: blood_sugar_mmol
+    
+  - platform: homeassistant
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_temperature
+    id: schlafzimmer_temp
+  - platform: homeassistant
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_humidity
+    id: schlafzimmer_humid
+  - platform: homeassistant
+    entity_id: sensor.bh1750_illuminance_2
+    id: schlafzimmer_illumination
+  - platform: homeassistant
+    entity_id: sensor.mh_z19_co2_value_2
+    id: schlafzimmer_co2
+
+  - platform: homeassistant
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_humidity
+    id: wohnzimmer_humid
+  - platform: homeassistant
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_temperature
+    id: wohnzimmer_temp
+  - platform: homeassistant
+    entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_illuminance
+    id: wohnzimmer_illumination
+
+
+    
+  - platform: homeassistant
+    entity_id: sensor.tempf_lacrosse204_temperature
+    id: dachboden_temp
+  - platform: homeassistant
+    entity_id: sensor.tempf_lacrosse204_humidity
+    id: dachboden_humid
+  - platform: homeassistant
+    entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_3d351a00_illuminance
+    id: dachboden_illumination
+binary_sensor:
+  - platform: gpio
+    name: "BUTTON_LINKS"
+    pin:
+      number: 39
+      inverted: true
+    on_press:
+      then:
+        - switch.turn_on: background
+        - display.page.show: wohnzimmer
+    on_release:
+      then:
+        - switch.turn_off: background
+    filters:
+      - delayed_off: 5s
+  - platform: gpio
+    name: "BUTTON_RECHTS"
+    pin:
+      number: 38
+      inverted: true
+    on_press:
+      then:
+        - switch.turn_on: background
+        - display.page.show: schlafzimmer
+    on_release:
+      then:
+        - switch.turn_off: background
+    filters:
+      - delayed_off: 5s
+  - platform: gpio
+    name: "BUTTON_MITTE"
+    pin:
+      number: 37
+      inverted: true
+    on_press:
+      then:
+        - switch.turn_on: background
+        - display.page.show: dachboden
+    on_release:
+      then:
+        - switch.turn_off: background
+    filters:
+      - delayed_off: 5s
+  - platform: homeassistant
+    entity_id: binary_sensor.fenster_wohnzimmer
+    id: wohnzimmer_fenster
+  - platform: homeassistant
+    entity_id: switch.lowboard_on_off
+    id: wohnzimmer_LowBoard_PS4
+  - platform: homeassistant
+    entity_id: switch.tz3000_1obwwnmq_ts011f_99ad90fe_on_off_2
+    id: wohnzimmer_LowBoard_Fernseher
+  - platform: homeassistant
+    entity_id: light.wohnzimmer_regal
+    id: wohnzimmer_Licht_Regal
+  - platform: homeassistant
+    entity_id: humidifier.wohnzimmer_befeuchter
+    id: wohnzimmer_Befeuchter
+switch:
+  - platform: gpio
+    pin: 4
+    id: background
+    
+graph:
+  # Show bare-minimum auto-ranged graph
+  - id: blood_sugar_mmol_graph
+    sensor: blood_sugar_mmol
+    duration: 2h
+    width: 240
+    height: 60
+    max_value: 15
+    min_value: 2
+    x_grid: 30min
+spi:
+  clk_pin: 18
+  miso_pin: 12
+  mosi_pin: 23
+
+
+display:
+  - platform: ili9341
+    model: TFT_2.4
+    cs_pin: 27
+    dc_pin: 32
+    led_pin: 4
+    reset_pin: 5
+    rotation: 0
+    id: my_display
+    #auto_clear_enabled: false
+    pages:
+     - id: wohnzimmer
+       lambda: |-
+          #define xres 240
+          #define yres 320        
+          #define firstline 15
+          #define nextline 25
+          #define seperator 90
+          int y = 1;
+          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Wohnzimmer");
+          y+=firstline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Temperatur");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f °C", id(wohnzimmer_temp).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftfeuchte");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f%%", id(wohnzimmer_humid).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Helligkeit");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f lx", id(wohnzimmer_illumination).state);         
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fenster");
+          if (id(wohnzimmer_fenster).state) {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Offen");
+          }
+          else {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Geschlossen");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fernseher");
+          if (id(wohnzimmer_LowBoard_Fernseher).state) {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "PS4/Chromecast");
+          if (id(wohnzimmer_LowBoard_PS4).state) {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Licht Regal");
+          if (id(wohnzimmer_Licht_Regal).state) {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftbefeuchter");
+          if (id(wohnzimmer_Befeuchter).state) {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Blutzucker");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
+     - id: schlafzimmer
+       lambda: |-
+          int y = 1;
+          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Schlafzimmer");
+          y+=firstline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Temperatur");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f °C", id(schlafzimmer_temp).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftfeuchte");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f%%", id(schlafzimmer_humid).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Helligkeit");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f lx", id(schlafzimmer_illumination).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "CO2");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f mmol", id(schlafzimmer_co2).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Blutzucker");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
+          
+          
+     - id: dachboden
+       lambda: |-
+          int y = 1;
+          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Dachboden");
+          y+=firstline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Temperatur");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f °C", id(dachboden_temp).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftfeuchte");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f%%", id(dachboden_humid).state);
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Helligkeit");
+          it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f lx", id(dachboden_illumination).state);    
