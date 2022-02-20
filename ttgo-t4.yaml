@@ -194,13 +194,31 @@ script:
                     id(switch_2).toggle();
                   }
                   else if ((id(markerpoint).state == 3)) {
-                    id(switch_2).toggle();
-                  }
-                  else if ((id(markerpoint).state == 3)) {
-                    id(switch_2).toggle();
+                    id(switch_3).toggle();
                   }
                   else if ((id(markerpoint).state == 4)) {
-                    id(switch_2).toggle();
+                    id(switch_4).toggle();
+                  }
+                  else if ((id(markerpoint).state == 5)) {
+                    id(switch_5).toggle();
+                  }
+                  else if ((id(markerpoint).state == 6)) {
+                    id(switch_6).toggle();
+                  }
+                  else if ((id(markerpoint).state == 7)) {
+                    id(switch_7).toggle();
+                  }
+                  else if ((id(markerpoint).state == 8)) {
+                    id(switch_8).toggle();
+                  }
+                  else if ((id(markerpoint).state == 9)) {
+                    id(switch_9).toggle();
+                  }
+                  else if ((id(markerpoint).state == 10)) {
+                    id(switch_10).toggle();
+                  }
+                  else if ((id(markerpoint).state == 11)) {
+                    id(switch_11).toggle();
                   }
 
 binary_sensor:
@@ -255,7 +273,7 @@ binary_sensor:
     internal: true
   - platform: homeassistant
     entity_id: switch.lowboard_on_off
-    id: schlafzimmer_sensor_1
+    id: wohnzimmer_PS4
     internal: true
   - platform: homeassistant
     entity_id: switch.tz3000_1obwwnmq_ts011f_99ad90fe_on_off_2
@@ -270,10 +288,38 @@ binary_sensor:
     id: wohnzimmer_Befeuchter
     internal: true
   - platform: homeassistant
+    entity_id: switch.tz3000_1obwwnmq_ts011f_99ad90fe_on_off_3
+    id: wohnzimmer_fujitsu
+    internal: true
+  - platform: homeassistant
     entity_id: switch.adguard_filtering
     id: sensor_adguard_filtering
     internal: true
-    
+  - platform: homeassistant
+    entity_id: switch.esstisch_on_off
+    id: esstisch_switch_1
+    internal: true    
+  - platform: homeassistant
+    entity_id: switch.tz3000_1obwwnmq_ts011f_7a9747fe_on_off_2
+    id: esstisch_switch_2
+    internal: true    
+  - platform: homeassistant
+    entity_id: switch.tz3000_1obwwnmq_ts011f_7a9747fe_on_off_3
+    id: esstisch_switch_3
+    internal: true    
+  - platform: homeassistant
+    entity_id: switch.tasmota2_3
+    id: wintergarten
+    internal: true    
+  - platform: homeassistant
+    entity_id: switch.sonoff11_th10_bachlauf
+    id: bachlauf
+    internal: true 
+  - platform: homeassistant
+    entity_id: switch.tasmota_2
+    id: zotac_hdds
+    internal: true    
+
 switch:
   - platform: gpio
     pin: 4
@@ -317,6 +363,124 @@ switch:
             api.connected:
         - homeassistant.event:
            event: esphome.switch_2
+  - platform: template
+    internal: true
+    id: switch_3
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_3
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_3
+  - platform: template
+    internal: true
+    id: switch_4
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_4
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_4
+  - platform: template
+    internal: true
+    id: switch_5
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_5
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_5
+  - platform: template
+    internal: true
+    id: switch_6
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_6
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_6
+  - platform: template
+    internal: true
+    id: switch_7
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_7
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_7
+  - platform: template
+    internal: true
+    id: switch_8
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_8
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_8
+  - platform: template
+    internal: true
+    id: switch_9
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_9
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_9
+  - platform: template
+    internal: true
+    id: switch_10
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_10
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_10
+  - platform: template
+    internal: true
+    id: switch_11
+    turn_on_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_11
+    turn_off_action:
+        - wait_until:
+            api.connected:
+        - homeassistant.event:
+           event: esphome.switch_11
+           
 graph:
   # Show bare-minimum auto-ranged graph
   - id: blood_sugar_mmol_graph
@@ -354,18 +518,74 @@ display:
           #define seperator 90
           int y = 1;
           it.rectangle(1, (id(markerpoint).state*nextline)+firstline, xres-1, nextline);
-          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Schlafzimmer");
+          it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Wohnzimmer");
           y+=firstline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "WLED");
-          if (id(schlafzimmer_sensor_0).state) {
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Regal");
+          if (id(wohnzimmer_Licht_Regal).state) {
            it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
           }
           else {
            it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Lowboard PS4");
-          if (id(schlafzimmer_sensor_1).state) {
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Lowboard Gaming");
+          if (id(wohnzimmer_fujitsu).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fernseher");
+          if (id(wohnzimmer_LowBoard_Fernseher).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Esstisch USB");
+          if (id(esstisch_switch_1).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Esstisch 2");
+          if (id(esstisch_switch_2).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Esstisch 3");
+          if (id(esstisch_switch_3).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Wintergarten");
+          if (id(wintergarten).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Bachlauf");
+          if (id(bachlauf).state) {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+          }
+          else {
+           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+          }
+          y+=nextline;
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "PS4/Stereo");
+          if (id(wohnzimmer_PS4).state) {
            it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
           }
           else {
@@ -380,46 +600,15 @@ display:
            it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftfeuchte");
-          it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f%%", id(schlafzimmer_humid).state);
-          y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Helligkeit");
-          it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.0f lx", id(wohnzimmer_illumination).state);         
-          y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fenster");
-          if (id(wohnzimmer_fenster).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Offen");
-          }
-          else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Geschlossen");
-          }
-          y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fernseher");
-          if (id(wohnzimmer_LowBoard_Fernseher).state) {
+          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Festplatten");
+          if (id(zotac_hdds).state) {
            it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
           }
           else {
            it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Licht Regal");
-          if (id(wohnzimmer_Licht_Regal).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
-          }
-          else {
-           it.printf(xres-1, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
-          }
-          y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Luftbefeuchter");
-          if (id(wohnzimmer_Befeuchter).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
-          }
-          else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
-          }
-          y+=nextline;
-          it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Blutzucker");
-          it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
+          
      - id: schlafzimmer
        lambda: |-
           int y = 1;
