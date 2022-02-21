@@ -1,6 +1,10 @@
 substitutions:
   esp_name: TTGO T4 Display #Device Name
   esp_hostname: ttgo-t4
+  sleep_time: 5min # normal sleep time
+  away_sleep_time: 1h # sleep time when nobody's at home
+  night_sleep_time: 6h # 1st sleep time after midnight
+  
   
 esphome:
   name: ${esp_hostname}
@@ -8,10 +12,16 @@ esphome:
   board: nodemcu-32s
   on_boot:
     then:
+    - switch.turn_off: background
     - wait_until:
        api.connected:
     - lambda: |-
           id(markerpoint).publish_state(0);
+          id(countdown_display).publish_state(30);
+    - switch.turn_on: background
+    - logger.log:       
+        format: "Markerpoint %.0f"
+        args: [ 'id(markerpoint).state' ]
 
 wifi:
   ssid: !secret wifi_ssid
@@ -36,11 +46,6 @@ api:
 ota:
   password: !secret password
 
-globals:
-  - id: mark
-    type: int
-    restore_value: no
-    initial_value: '0' 
 color:
   - id: RED
     red: 100%
@@ -100,15 +105,11 @@ time:
 sensor:
   - platform: template
     id: markerpoint
-    on_value_range:
-      - above: 11
-        then:
-         - lambda: |-
-            id(markerpoint).state = 0;
-      - below: 0
-        then:
-        - lambda: |-
-              id(markerpoint).state = 11;
+    update_interval: 1s
+  - platform: template
+    id: countdown_display
+    update_interval: 1s
+    internal: true
   - platform: wifi_signal
     name: "WiFi Signal Sensor TTGO Display"
     update_interval: 60s
@@ -160,6 +161,23 @@ sensor:
     entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_3d351a00_illuminance
     id: dachboden_illumination
     internal: true
+    
+interval:
+  - interval: 1s
+    then:
+     - logger.log:       
+        format: "Countdown %.0f"
+        args: [ 'id(countdown_display).state' ]
+     - if:
+        condition:
+          lambda: 'return id(countdown_display).state < 1;'
+        then:
+          - switch.turn_off: background
+        else:
+          - sensor.template.publish:
+              id: countdown_display
+              state: !lambda |- 
+                return id(countdown_display).state - 1;          
 
 script:
   - id: check_markerpoint_below
@@ -230,7 +248,11 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-              id(markerpoint).state += 1; 
+              id(countdown_display).state = 10;
+        - sensor.template.publish:
+              id: markerpoint
+              state: !lambda |- 
+                return id(markerpoint).state + 1;
         - script.execute: check_markerpoint_above
         - switch.turn_on: background
         - display.page.show: wohnzimmer
@@ -246,7 +268,11 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-              id(markerpoint).state -= 1;
+              id(countdown_display).state = 10;
+        - sensor.template.publish:
+              id: markerpoint
+              state: !lambda |- 
+                return id(markerpoint).state - 1;
         - script.execute: check_markerpoint_below
         - switch.turn_on: background
         - display.page.show: wohnzimmer
@@ -260,7 +286,10 @@ binary_sensor:
       inverted: true
     on_press:
       then:
+        - lambda: |-
+              id(countdown_display).state = 10;
         - script.execute: button_toggle
+        - switch.turn_on: background
         - display.page.show: wohnzimmer
 
   - platform: homeassistant
@@ -517,95 +546,95 @@ display:
           #define nextline 25
           #define seperator 90
           int y = 1;
-          it.rectangle(1, (id(markerpoint).state*nextline)+firstline, xres-1, nextline);
+          it.rectangle(1, (id(markerpoint).state*nextline)+firstline, xres-1, nextline, id(RED));
           it.print(xres/2, y, id(sans_medium_10), TextAlign::TOP_CENTER, "Wohnzimmer");
           y+=firstline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Regal");
           if (id(wohnzimmer_Licht_Regal).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Lowboard Gaming");
           if (id(wohnzimmer_fujitsu).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Fernseher");
           if (id(wohnzimmer_LowBoard_Fernseher).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Esstisch USB");
           if (id(esstisch_switch_1).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Esstisch 2");
           if (id(esstisch_switch_2).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Esstisch 3");
           if (id(esstisch_switch_3).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Wintergarten");
           if (id(wintergarten).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Bachlauf");
           if (id(bachlauf).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "PS4/Stereo");
           if (id(wohnzimmer_PS4).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "AdGuard");
           if (id(sensor_adguard_filtering).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           it.print(1, y, id(sans_medium_20), TextAlign::TOP_LEFT, "Festplatten");
           if (id(zotac_hdds).state) {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "An");
+           it.printf(xres, y, id(sans_medium_20), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(sans_medium_20), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(xres, y, id(sans_medium_20), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=nextline;
           
