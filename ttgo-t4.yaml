@@ -202,42 +202,7 @@ script:
   - id: button_toggle
     then:
            lambda: |-
-                  if ((id(markerpoint).state == 0)) {
-                    id(switch_0).toggle();
-                  }
-                  else if ((id(markerpoint).state == 1)) {
-                    id(switch_1).toggle();
-                  }
-                  else if ((id(markerpoint).state == 2)) {
-                    id(switch_2).toggle();
-                  }
-                  else if ((id(markerpoint).state == 3)) {
-                    id(switch_3).toggle();
-                  }
-                  else if ((id(markerpoint).state == 4)) {
-                    id(switch_4).toggle();
-                  }
-                  else if ((id(markerpoint).state == 5)) {
-                    id(switch_5).toggle();
-                  }
-                  else if ((id(markerpoint).state == 6)) {
-                    id(switch_6).toggle();
-                  }
-                  else if ((id(markerpoint).state == 7)) {
-                    id(switch_7).toggle();
-                  }
-                  else if ((id(markerpoint).state == 8)) {
-                    id(switch_8).toggle();
-                  }
-                  else if ((id(markerpoint).state == 9)) {
-                    id(switch_9).toggle();
-                  }
-                  else if ((id(markerpoint).state == 10)) {
-                    id(switch_10).toggle();
-                  }
-                  else if ((id(markerpoint).state == 11)) {
-                    id(switch_11).toggle();
-                  }
+             id(switch_ha).toggle();
 
 binary_sensor:
   - platform: gpio
@@ -248,7 +213,7 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-              id(countdown_display).state = 10;
+              id(countdown_display).publish_state(10);
         - sensor.template.publish:
               id: markerpoint
               state: !lambda |- 
@@ -268,7 +233,7 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-              id(countdown_display).state = 10;
+              id(countdown_display).publish_state(10);
         - sensor.template.publish:
               id: markerpoint
               state: !lambda |- 
@@ -287,7 +252,7 @@ binary_sensor:
     on_press:
       then:
         - lambda: |-
-              id(countdown_display).state = 10;
+             id(countdown_display).publish_state(10);
         - script.execute: button_toggle
         - switch.turn_on: background
         - display.page.show: wohnzimmer
@@ -355,161 +320,25 @@ switch:
     id: background
   - platform: template
     internal: true
-    id: switch_0
+    id: switch_ha
     turn_on_action:
         - wait_until:
             api.connected:
         - homeassistant.event:
-           event: esphome.switch_${markerpoint}
+           event: esphome.switch_all
+           data:
+             message: !lambda |- 
+                return id(markerpoint).state;
+
     turn_off_action:
         - wait_until:
             api.connected:
         - homeassistant.event:
-           event: esphome.switch_${markerpoint}
-  - platform: template
-    internal: true
-    id: switch_1
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_1
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_1
-  - platform: template
-    internal: true
-    id: switch_2
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_2
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_2
-  - platform: template
-    internal: true
-    id: switch_3
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_3
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_3
-  - platform: template
-    internal: true
-    id: switch_4
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_4
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_4
-  - platform: template
-    internal: true
-    id: switch_5
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_5
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_5
-  - platform: template
-    internal: true
-    id: switch_6
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_6
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_6
-  - platform: template
-    internal: true
-    id: switch_7
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_7
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_7
-  - platform: template
-    internal: true
-    id: switch_8
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_8
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_8
-  - platform: template
-    internal: true
-    id: switch_9
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_9
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_9
-  - platform: template
-    internal: true
-    id: switch_10
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_10
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_10
-  - platform: template
-    internal: true
-    id: switch_11
-    turn_on_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_11
-    turn_off_action:
-        - wait_until:
-            api.connected:
-        - homeassistant.event:
-           event: esphome.switch_11
-           
+           event: esphome.switch_all
+           data:
+             message: !lambda |- 
+                return id(markerpoint).state;
+
 graph:
   # Show bare-minimum auto-ranged graph
   - id: blood_sugar_mmol_graph
