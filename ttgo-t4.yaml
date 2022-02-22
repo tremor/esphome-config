@@ -111,7 +111,7 @@ sensor:
     update_interval: 1s
     internal: true
   - platform: wifi_signal
-    name: "WiFi Signal Sensor TTGO Display"
+    name: "WiFi Signal Sensor ${esp_name}"
     update_interval: 60s
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol

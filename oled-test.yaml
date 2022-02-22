@@ -1,0 +1,34 @@
+substitutions:
+  esp_name: OLED Tester #Device Name
+  esp_hostname: oled-test
+  run_time: 1min #can be as long as needed to get data 
+  sleep_time: 5min # normal sleep time
+  away_sleep_time: 1h # sleep time when nobody's at home
+  night_sleep_time: 6h # 1st sleep time after midnight
+  
+esphome:
+  name: ${esp_hostname}
+  platform: ESP32
+  board: wemos_d1_mini32
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret password
+
+ota:
+  password: !secret password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 10.11.30.163
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_hostname}"
+    password: !secret password
+    
