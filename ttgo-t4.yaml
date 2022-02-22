@@ -360,12 +360,12 @@ switch:
         - wait_until:
             api.connected:
         - homeassistant.event:
-           event: esphome.switch_0
+           event: esphome.switch_${markerpoint}
     turn_off_action:
         - wait_until:
             api.connected:
         - homeassistant.event:
-           event: esphome.switch_0
+           event: esphome.switch_${markerpoint}
   - platform: template
     internal: true
     id: switch_1
