@@ -1,10 +1,12 @@
 substitutions:
   esp_name: CO2 Sensor #Device Name
   esp_hostname: co2_1
-  run_time: 30s #can be as long as needed to get data 
-  sleep_time: 5min # normal sleep time
+  run_time: 24h #can be as long as needed to get data 
+  sleep_time: 1min # normal sleep time
   away_sleep_time: 1h # sleep time when nobody's at home
-  night_sleep_time: 6h # 1st sleep time after midnight
+  night_sleep_time: 6h # 1st sleep time after midnight  
+  x_res: '128'
+  y_res: '64'
 
 esphome:
   name: ${esp_hostname}
@@ -41,12 +43,17 @@ sun: !include common/sun.yaml
 mqtt: !include common/mqtt.yaml
 
 deep_sleep:
+  run_duration: ${run_time}
   id: deep_sleep_1
   
 text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
 
+i2c:
+  sda: 14
+  scl: 15
+  
 uart:
   rx_pin: 3
   tx_pin: 1
@@ -69,7 +76,26 @@ sensor:
       name: "PETG Aktive Box Humidity"
     battery_level:
       name: "PETG Aktive Box Battery Level"
-
+  - platform: homeassistant
+    entity_id: sensor.blood_sugar_mmol
+    id: blood_sugar_mmol
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_illuminance
+    id: wohnzimmer_illumination
+    internal: true
+    
+switch:    
+  - platform: template
+    name: "OLED Display"
+    id: displayswitch
+    turn_off_action:
+     - display.page.show: blank
+     - component.update: oled
+    turn_on_action:
+     - display.page.show: bloodsugar
+     - component.update: oled    
+     
 esp32_ble_tracker:
 binary_sensor:
   # Presence based on MAC address
@@ -84,3 +110,46 @@ binary_sensor:
   - platform: ble_presence
     service_uuid: '1808'
     name: "DexCom 1808 Service UUID detected"
+    
+    
+font: !include common/fonts.yaml
+
+graph:
+  # Show bare-minimum auto-ranged graph
+  - id: blood_sugar_mmol_graph
+    sensor: blood_sugar_mmol
+    duration: 2h
+    width: ${x_res}
+    height: ${y_res}
+    max_value: 15
+    min_value: 2
+    x_grid: 30min
+    y_grid: 5.0
+    
+    
+display:
+  - platform: ssd1306_i2c
+    model: "SH1106 128x64"
+    id: oled
+    address: 0x3C
+    pages:
+     - id: blank
+       lambda: |-
+           it.filled_rectangle(0, 0, ${x_res},${y_res}, COLOR_OFF);
+           if (id(blood_sugar_mmol).state < 4) {
+             it.printf(0, 0, id(sans_medium_10),TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+           }
+           else {
+             it.printf(0, 0, id(sans_medium_10), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+           }
+     - id: bloodsugar
+       lambda: |-    
+           if (id(blood_sugar_mmol).state < 4) {
+             it.printf(0, 0, id(sans_bold_56),TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+           }
+           else {
+             it.printf(0, 0, id(sans_bold_56), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+           }
+           it.printf(${x_res}-2, 0, id(sans_medium_10), TextAlign::TOP_RIGHT, "Nix");
+           it.printf(${x_res}-2, ${y_res}-2, id(sans_medium_10), TextAlign::BOTTOM_RIGHT, "%.0f lux", id(wohnzimmer_illumination).state);
+           it.graph(0, 0, id(blood_sugar_mmol_graph));
