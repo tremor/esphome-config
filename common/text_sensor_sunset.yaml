@@ -1,0 +1,7 @@
+- platform: sun
+  id: sunset
+  name: Sun Next Sunset
+  type: sunset
+  format: "%H:%M"
+  internal: true
+  update_interval: never    

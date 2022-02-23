@@ -1,0 +1,7 @@
+- platform: homeassistant
+  id: ntp
+  timezone: Europe/Berlin
+  on_time_sync:
+    - then:
+      - component.update: sunrise
+      - component.update: sunset

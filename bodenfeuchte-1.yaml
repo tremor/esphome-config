@@ -31,28 +31,16 @@ api:
 ota:
   password: !secret password
 
-mqtt:
-  broker: 10.10.30.17
-  username: !secret mqtt_user
-  password: !secret mqtt_password
-  discovery: True
-  on_message:
-  - topic: ${esp_hostname}/ota_mode
-    payload: 'ON'
-    then:
-      - deep_sleep.prevent: deep_sleep_1
-  - topic: ${esp_hostname}/sleep_mode
-    payload: 'ON'
-    then:
-      - deep_sleep.enter: deep_sleep_1
+sun: !include common/sun.yaml 
+
+mqtt: !include common/mqtt.yaml
 
 esp32_ble_tracker:
 binary_sensor:
-  # Presence based on MAC address
   - platform: ble_presence
     mac_address: !secret g6_mac
     name: "DexCom MAC at CO2 detected"
-    # Presence based on BLE Service UUID
+
 time:
   - platform: sntp
     id: sntp_time
@@ -73,16 +61,9 @@ deep_sleep:
   sleep_duration: 10s
   id: deep_sleep_1
 
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-      id: ip
-    ssid:
-      name: Connected SSID
-      id: ssid
 
 sensor:
+  - <<: !include common/sensor_wifisignal.yaml
   - platform: adc
     pin: 32
     name: "${esp_hostname}_1"

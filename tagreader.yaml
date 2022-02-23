@@ -1,6 +1,8 @@
 substitutions:
   esp_name: Tagreader #Device Name
   esp_hostname: tagreader
+  run_time: 30s #can be as long as needed to get data 
+  sleep_time: 5min # normal sleep time
   
 esphome:
   name: ${esp_hostname}
@@ -47,14 +49,25 @@ api:
 ota:
   password: !secret password
 
-mqtt:
-  broker: 10.10.30.17
-  username: !secret mqtt_user
-  password: !secret mqtt_password
-  discovery: True
+time: !include common/time.yaml
+
+sun: !include common/sun.yaml 
+
+mqtt: !include common/mqtt.yaml
+
+deep_sleep:
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
   
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
+
 esp32_ble_tracker:
 
+sensor:
+  - <<: !include common/sensor_wifisignal.yaml
+    
 # Define switches to control LED and buzzer from HA
 switch:
 - platform: template
@@ -82,15 +95,6 @@ rc522_spi:
   on_tag:
     then:
     - homeassistant.tag_scanned: !lambda 'return x;'
-
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-      id: ip
-    ssid:
-      name: Connected SSID
-      id: ssid
 
 binary_sensor:
   - platform: status

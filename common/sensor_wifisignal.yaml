@@ -1,0 +1,4 @@
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor ${esp_hostname}"
+    update_interval: 60s
+    id: wifisignal

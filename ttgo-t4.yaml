@@ -78,31 +78,14 @@ color:
     green: 0%
     blue: 0%
  
-font:
-  - file: "fonts/GoogleSans-Bold.ttf"
-    id: sans_bold_38
-    size: 38
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_56
-    size: 56    
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_28
-    size: 28
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_20
-    size: 20
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_14
-    size: 14
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_10
-    size: 10
-time:
-  - platform: homeassistant
-    id: ntp
-    timezone: Europe/Berlin
-    
+font: !include common/fonts.yaml
+
+time: !include common/time.yaml
+
+sun: !include common/sun.yaml
+
 sensor:
+  - <<: !include common/sensor_wifisignal.yaml
   - platform: template
     id: markerpoint
     update_interval: 1s
@@ -110,9 +93,7 @@ sensor:
     id: countdown_display
     update_interval: 1s
     internal: true
-  - platform: wifi_signal
-    name: "WiFi Signal Sensor ${esp_name}"
-    update_interval: 60s
+
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol

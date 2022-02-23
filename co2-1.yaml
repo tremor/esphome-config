@@ -1,5 +1,13 @@
+substitutions:
+  esp_name: CO2 Sensor #Device Name
+  esp_hostname: co2_1
+  run_time: 30s #can be as long as needed to get data 
+  sleep_time: 5min # normal sleep time
+  away_sleep_time: 1h # sleep time when nobody's at home
+  night_sleep_time: 6h # 1st sleep time after midnight
+
 esphome:
-  name: co2_1
+  name: ${esp_hostname}
   platform: ESP32
   board: esp-wrover-kit
 #  libraries: ciniml/WireGuard-ESP32
@@ -26,35 +34,24 @@ api:
 ota:
   password: !secret password
 
-mqtt:
-  broker: 10.10.30.17
-  username: !secret mqtt_user
-  password: !secret mqtt_password
-  discovery: True
+time: !include common/time.yaml
+
+sun: !include common/sun.yaml 
+
+mqtt: !include common/mqtt.yaml
+
+deep_sleep:
+  id: deep_sleep_1
+  
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
 
 uart:
   rx_pin: 3
   tx_pin: 1
   baud_rate: 9600
 
-#time:
-#  - platform: sntp
-#    on_time_sync:
-#        then:
-#        - lambda: |
-#            static const char* TAG = "wireguard";
-#            ESP_LOGD(TAG, "Starting...");
-#            if( !wg.is_initialized() ) {
-#                        ESP_LOGD(TAG, "Initializing WG interface...");
-#                        if( !wg.begin(
-#                                local_ip,
-#                                private_key,
-#                                endpoint_address,
-#                                public_key,
-#                                endpoint_port) ) {
-#                            ESP_LOGD(TAG, "Failed to initialize WG interface.");
-#                        }
-#                    }
 sensor:
   - platform: mhz19
     co2:

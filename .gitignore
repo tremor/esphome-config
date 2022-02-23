@@ -6,3 +6,4 @@
 /wg-settings*
 /esphome/
 /esphome.old/
+/common/secrets.yaml

@@ -33,24 +33,12 @@ wifi:
     ssid: "${esp_hostname}"
     password: !secret password
 
+time: !include common/time.yaml
 
+sun: !include common/sun.yaml 
 
+mqtt: !include common/mqtt.yaml
 
-mqtt:
-  broker: 10.10.30.17
-  username: espurna
-  password: PBrZtfLf5x88Ur8b
-  discovery: True
-  on_message:
-  - topic: ${esp_hostname}/ota_mode
-    payload: 'ON'
-    then:
-      - deep_sleep.prevent: deep_sleep_1
-  - topic: ${esp_hostname}/sleep_mode
-    payload: 'ON'
-    then:
-      - deep_sleep.enter: deep_sleep_1
-      
 deep_sleep:
   run_duration: ${run_time} 
   sleep_duration: ${sleep_time}
@@ -290,21 +278,9 @@ text_sensor:
   - platform: homeassistant
     entity_id:  sensor.weathermet_wind_direction
     id: wind_dir
-  - platform: sun
-    id: sunrise
-    name: Sun Next Sunrise
-    type: sunrise
-    format: "%H:%M"
-    internal: true
-    update_interval: never
-  
-  - platform: sun
-    id: sunset
-    name: Sun Next Sunset
-    type: sunset
-    format: "%H:%M"    
-    internal: true
-    update_interval: never
+    
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
     
 script:
   - id: refresh_display
@@ -358,19 +334,6 @@ script:
                 id: deep_sleep_1 
                 sleep_duration: ${sleep_time}
 
-time:
-  - platform: homeassistant
-    id: ntp
-    timezone: Europe/Berlin
-    on_time_sync:
-      - then:
-        - component.update: sunrise
-        - component.update: sunset
-
-sun:
-  latitude: 54.0887°
-  longitude: 12.1405°   
-  
 display:
 #  - platform: t547
   - platform: lilygo_t5_47_display

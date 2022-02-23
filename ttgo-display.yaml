@@ -29,6 +29,8 @@ api:
 ota:
   password: !secret password
 
+font: !include common/fonts.yaml
+
 color:
   - id: my_red
     red: 100%
@@ -51,16 +53,7 @@ color:
     green: 50%
     blue: 50%
 
-font:
-  - file: "fonts/GoogleSans-Bold.ttf"
-    id: sans_bold_38
-    size: 38
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_56
-    size: 56    
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_28
-    size: 28    
+
 
 binary_sensor:
   - platform: gpio
@@ -114,21 +107,8 @@ binary_sensor:
     id: system_status
     
 text_sensor:
-  - platform: sun
-    id: sunrise
-    name: Sun Next Sunrise
-    type: sunrise
-    format: "%H:%M"
-    internal: true
-    update_interval: never
-    
-  - platform: sun
-    id: sunset
-    name: Sun Next Sunset
-    type: sunset
-    format: "%H:%M"    
-    internal: true
-    update_interval: never
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
   - platform: homeassistant
     entity_id: media_player.schlafzimmer_schreibtis
     id: mediaplayer_schlafzimmer_schreibtisch
@@ -138,9 +118,7 @@ text_sensor:
     id: mediaplayer_schlafzimmer_schreibtisch_track
     internal: true  
 sensor:
-  - platform: wifi_signal
-    name: "WiFi Signal Sensor TTGO Display"
-    update_interval: 60s
+  - <<: !include common/sensor_wifisignal.yaml
   - platform: bh1750
     name: "BH1750 Illuminance"
     address: 0x23

@@ -31,17 +31,20 @@ wifi:
     ssid: "${esp_hostname}"
     password: !secret password
 
-mqtt:
-  broker: 10.10.30.17
-  username: !secret mqtt_user
-  password: !secret mqtt_password
-  discovery: True
+mqtt: !include common/mqtt.yaml
 
+sun: !include common/sun.yaml 
+
+deep_sleep:
+  id: deep_sleep_1
+  
 captive_portal:
 
 esp32_ble_tracker:
 
 text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
   - platform: ble_scanner
     name: "BLE Devices Scanner"
 

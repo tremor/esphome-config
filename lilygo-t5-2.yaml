@@ -1,6 +1,7 @@
 substitutions:
   esp_name: Lilygo ePaper 2 #Device Name
   esp_hostname: lilygo-t5-2
+  run_time: 30s #can be as long as needed to get data 
   sleep_time: 5min # normal sleep time
   away_sleep_time: 1h # sleep time when nobody's at home
   night_sleep_time: 6h # 1st sleep time after midnight
@@ -36,28 +37,22 @@ api:
 ota:
   password: !secret password
 
-font:
-  - file: "fonts/GoogleSans-Bold.ttf"
-    id: sans_bold_38
-    size: 38
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_56
-    size: 56
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium
-    size: 45
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_28
-    size: 28
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_20
-    size: 20
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_14
-    size: 14
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: sans_medium_10
-    size: 10
+time: !include common/time.yaml
+
+sun: !include common/sun.yaml 
+
+mqtt: !include common/mqtt.yaml
+
+deep_sleep:
+  run_duration: ${run_time} 
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+  
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
+    
+font: !include fonts.yaml
 
 interval:
   - interval: 1s

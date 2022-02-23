@@ -31,7 +31,25 @@ wifi:
   ap:
     ssid: "${esp_hostname}"
     password: !secret password
-    
+
+time: !include common/time.yaml
+
+sun: !include common/sun.yaml 
+
+mqtt: !include common/mqtt.yaml
+
+deep_sleep:
+  run_duration: ${run_time} 
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+  esp32_ext1_wakeup:
+    pins: GPIO36
+    mode: ALL_LOW
+  
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
+
 font:
   - file: "fonts/GoogleSans-Medium.ttf"
     id: font_m14
@@ -146,43 +164,8 @@ script:
         
 
     
-time:
-  - platform: homeassistant
-    id: ntp
-    timezone: Europe/Berlin
-    on_time_sync:
-      - then:
-        - component.update: sunrise
-        - component.update: sunset
 
-sun:
-  latitude: 54.0887°
-  longitude: 12.1405°   
-  
 
-mqtt:
-  broker: 10.10.30.17
-  username: !secret mqtt_user
-  password: !secret mqtt_password
-  discovery: True
-  on_message:
-  - topic: lilygo-t-block-1/ota_mode
-    payload: 'ON'
-    then:
-      - deep_sleep.prevent: deep_sleep_1
-  - topic: lilygo-t-block-1/sleep_mode
-    payload: 'ON'
-    then:
-      - deep_sleep.enter: deep_sleep_1
-      
-deep_sleep:
-  run_duration: ${run_time} 
-  sleep_duration: ${sleep_time}
-  id: deep_sleep_1
-  esp32_ext1_wakeup:
-    pins: GPIO36
-    mode: ALL_LOW
-    
 spi:
   clk_pin: 18
   mosi_pin: 23
@@ -192,24 +175,7 @@ i2c:
   scl: 22
   scan: true
   id: bus_a
-  
-text_sensor:
-  - platform: sun
-    id: sunrise
-    name: Sun Next Sunrise
-    type: sunrise
-    format: "%H:%M"
-    internal: true
-    update_interval: never
-  
-  - platform: sun
-    id: sunset
-    name: Sun Next Sunset
-    type: sunset
-    format: "%H:%M"    
-    internal: true
-    update_interval: never
-    
+
 sensor:
   - platform: mpu6050
     address: 0x68
