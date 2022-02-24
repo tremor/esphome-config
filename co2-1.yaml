@@ -7,6 +7,11 @@ substitutions:
   night_sleep_time: 6h # 1st sleep time after midnight  
   x_res: '128'
   y_res: '64'
+  x_space: '20'
+  y_space: '15'
+  font_small: 'sans_medium_15'
+  font_medium: 'sans_medium_28'
+  font_large: 'sans_bold_56'
 
 esphome:
   name: ${esp_hostname}
@@ -50,6 +55,35 @@ text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
 
+globals:
+   - id: burnin_x
+     type: int
+     restore_value: no
+     initial_value: '0'
+   - id: burnin_y
+     type: int
+     restore_value: no
+     initial_value: '0'
+
+interval:
+  - interval: 1min
+    then:
+    - lambda: |-
+        if (id(burnin_y) < ${y_res}-${y_space} ) {
+          id(burnin_y) += 1;
+        }
+        else {
+          id(burnin_y) = 0;
+          id(burnin_x) += 1;
+        }
+        if (id(burnin_x) < ${x_res}-${x_space} ) {
+          ESP_LOGD("main", "Don't change burnin_x");
+        }
+        else {
+          id(burnin_x) = 0;
+        }
+        ESP_LOGD("main", "Global value burnin_y is: %d and burnin_x is: %d", id(burnin_y), id(burnin_x));
+
 i2c:
   sda: 14
   scl: 15
@@ -67,15 +101,15 @@ sensor:
       name: "MH-Z19 Temperature"
     update_interval: 60s
     automatic_baseline_calibration: false
-  - platform: xiaomi_lywsd03mmc
-    mac_address: A4:C1:38:17:69:7A
-    bindkey: "cd4feb2e97fbdcca84214c56a77bf24d"
-    temperature:
-      name: "PETG Aktive Box Temperature"
-    humidity:
-      name: "PETG Aktive Box Humidity"
-    battery_level:
-      name: "PETG Aktive Box Battery Level"
+  #- platform: xiaomi_lywsd03mmc
+  #  mac_address: A4:C1:38:17:69:7A
+  #  bindkey: "cd4feb2e97fbdcca84214c56a77bf24d"
+  #  temperature:
+  #    name: "PETG Aktive Box Temperature"
+  #  humidity:
+  #    name: "PETG Aktive Box Humidity"
+  #  battery_level:
+  #    name: "PETG Aktive Box Battery Level"
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
@@ -96,20 +130,20 @@ switch:
      - display.page.show: bloodsugar
      - component.update: oled    
      
-esp32_ble_tracker:
-binary_sensor:
+#esp32_ble_tracker:
+#binary_sensor:
   # Presence based on MAC address
-  - platform: ble_presence
-    mac_address: !secret g6_mac
-    name: "DexCom MAC at CO2 detected"
-    # Presence based on BLE Service UUID
-  - platform: ble_presence
-    service_uuid: '1201'
-    name: "DexCom Service 1201 UUID detected"
-    # Presence based on BLE Service UUID
-  - platform: ble_presence
-    service_uuid: '1808'
-    name: "DexCom 1808 Service UUID detected"
+  #- platform: ble_presence
+  #  mac_address: !secret g6_mac
+  #  name: "DexCom MAC at CO2 detected"
+  #  # Presence based on BLE Service UUID
+  #- platform: ble_presence
+  #  service_uuid: '1201'
+  #  name: "DexCom Service 1201 UUID detected"
+  #  # Presence based on BLE Service UUID
+  #- platform: ble_presence
+  #  service_uuid: '1808'
+  #  name: "DexCom 1808 Service UUID detected"
     
     
 font: !include common/fonts.yaml
@@ -137,19 +171,19 @@ display:
        lambda: |-
            it.filled_rectangle(0, 0, ${x_res},${y_res}, COLOR_OFF);
            if (id(blood_sugar_mmol).state < 4) {
-             it.printf(0, 0, id(sans_medium_10),TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+             it.printf(id(burnin_x), id(burnin_y), id(${font_small}),TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
            }
            else {
-             it.printf(0, 0, id(sans_medium_10), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+             it.printf(id(burnin_x), id(burnin_y), id(${font_small}), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
            }
      - id: bloodsugar
        lambda: |-    
            if (id(blood_sugar_mmol).state < 4) {
-             it.printf(0, 0, id(sans_bold_56),TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+             it.printf(0, 0, id(${font_large}),TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
            }
            else {
-             it.printf(0, 0, id(sans_bold_56), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+             it.printf(0, 0, id(${font_large}), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
            }
-           it.printf(${x_res}-2, 0, id(sans_medium_10), TextAlign::TOP_RIGHT, "Nix");
-           it.printf(${x_res}-2, ${y_res}-2, id(sans_medium_10), TextAlign::BOTTOM_RIGHT, "%.0f lux", id(wohnzimmer_illumination).state);
+           it.printf(${x_res}-2, 0, id(${font_small}), TextAlign::TOP_RIGHT, "Nix");
+           it.printf(${x_res}-2, ${y_res}-2, id(${font_small}), TextAlign::BOTTOM_RIGHT, "%.0f lux", id(wohnzimmer_illumination).state);
            it.graph(0, 0, id(blood_sugar_mmol_graph));
