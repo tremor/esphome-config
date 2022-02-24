@@ -6,7 +6,12 @@ substitutions:
   night_sleep_time: 6h # 1st sleep time after midnight
   font_small: 'sans_medium_10'
   font_medium: 'sans_medium_20'
-  font_large: 'sans_bold_56'  
+  font_large: 'sans_bold_56'
+  x_res: '240'
+  y_res: '320'
+  firstline: '15'
+  nextline: '25'
+  seperator: '90'
   
 esphome:
   name: ${esp_hostname}
@@ -18,12 +23,8 @@ esphome:
     - wait_until:
        api.connected:
     - lambda: |-
-          id(markerpoint).publish_state(0);
-          id(countdown_display).publish_state(30);
+         ESP_LOGD("main", "Global value markerpoint is: %d", id(markerpoint));
     - switch.turn_on: background
-    - logger.log:       
-        format: "Markerpoint %.0f"
-        args: [ 'id(markerpoint).state' ]
 
 wifi:
   ssid: !secret wifi_ssid
@@ -65,6 +66,10 @@ globals:
      type: int
      restore_value: no
      initial_value: '30'
+   - id: markerpoint
+     type: int
+     restore_value: no
+     initial_value: '0'
      
 interval:
   - interval: 1s
@@ -78,29 +83,26 @@ interval:
         then:
           - switch.turn_off: background
         else:
-          - sensor.template.publish:
-              id: countdown_display
-              state: !lambda |- 
-                return id(countdown) -= 1;          
+          - lambda: 'id(countdown) -= 1;'
 
 script:
   - id: check_markerpoint_below
     then:
       - if:
          condition:
-           lambda: 'return id(markerpoint).state == -1;'
+           lambda: 'return id(markerpoint) == -1;'
          then:
            - lambda: |-
-              id(markerpoint).state = 11;
+              id(markerpoint) = 11;
            - logger.log: "Below 0"
   - id: check_markerpoint_above
     then:
       - if:
          condition:
-           lambda: 'return id(markerpoint).state == 12;'
+           lambda: 'return id(markerpoint) == 12;'
          then:
            - lambda: |-
-              id(markerpoint).state = 0;
+              id(markerpoint) = 0;
            - logger.log: "Above 11"
            
   - id: button_toggle
@@ -110,13 +112,6 @@ script:
              
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
-  - platform: template
-    id: markerpoint
-    update_interval: 1s
-  - platform: template
-    id: countdown_display
-    update_interval: 1s
-    internal: true
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
@@ -176,16 +171,13 @@ binary_sensor:
       then:
         - lambda: |-
               id(countdown) = 10;
-        - sensor.template.publish:
-              id: markerpoint
-              state: !lambda |- 
-                return id(markerpoint).state + 1;
+              id(markerpoint) += 1;
         - script.execute: check_markerpoint_above
         - switch.turn_on: background
         - display.page.show: wohnzimmer
         - logger.log:       
-            format: "Button Down %.0f"
-            args: [ 'id(markerpoint).state' ]
+            format: "Button Down %d"
+            args: [ 'id(markerpoint)' ]
         
   - platform: gpio
     name: "BUTTON_RECHTS"
@@ -196,16 +188,13 @@ binary_sensor:
       then:
         - lambda: |-
               id(countdown) = 10;
-        - sensor.template.publish:
-              id: markerpoint
-              state: !lambda |- 
-                return id(markerpoint).state - 1;
+              id(markerpoint) -= 1;
         - script.execute: check_markerpoint_below
         - switch.turn_on: background
         - display.page.show: wohnzimmer
         - logger.log:       
-            format: "Button Up %.0f"
-            args: [ 'id(markerpoint).state' ]
+            format: "Button Up %d"
+            args: [ 'id(markerpoint)' ]
   - platform: gpio
     name: "BUTTON_MITTE"
     pin:
@@ -290,7 +279,7 @@ switch:
            event: esphome.switch_all
            data:
              message: !lambda |- 
-                return id(markerpoint).state;
+                return id(markerpoint);
 
     turn_off_action:
         - wait_until:
@@ -299,7 +288,7 @@ switch:
            event: esphome.switch_all
            data:
              message: !lambda |- 
-                return id(markerpoint).state;
+                return id(markerpoint);
 
 graph:
   # Show bare-minimum auto-ranged graph
@@ -331,135 +320,130 @@ display:
     pages:
      - id: wohnzimmer
        lambda: |-
-          #define xres 240
-          #define yres 320        
-          #define firstline 15
-          #define nextline 25
-          #define seperator 90
           int y = 1;
-          it.rectangle(1, (id(markerpoint).state*nextline)+firstline, xres-1, nextline, id(RED));
-          it.print(xres/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Wohnzimmer");
-          y+=firstline;
+          it.rectangle(1, (id(markerpoint)*${nextline})+${firstline}, ${x_res}-1, ${nextline}, id(RED));
+          it.print(${x_res}/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Wohnzimmer");
+          y+=${firstline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Regal");
           if (id(wohnzimmer_Licht_Regal).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Lowboard Gaming");
           if (id(wohnzimmer_fujitsu).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Fernseher");
           if (id(wohnzimmer_LowBoard_Fernseher).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Esstisch USB");
           if (id(esstisch_switch_1).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Esstisch 2");
           if (id(esstisch_switch_2).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Esstisch 3");
           if (id(esstisch_switch_3).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Wintergarten");
           if (id(wintergarten).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Bachlauf");
           if (id(bachlauf).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "PS4/Stereo");
           if (id(wohnzimmer_PS4).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "AdGuard");
           if (id(sensor_adguard_filtering).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Festplatten");
           if (id(zotac_hdds).state) {
-           it.printf(xres, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
+           it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
-           it.printf(xres, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
+           it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
-          y+=nextline;
+          y+=${nextline};
           
      - id: schlafzimmer
        lambda: |-
           int y = 1;
-          it.print(xres/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Schlafzimmer");
-          y+=firstline;
+          it.print(${x_res}/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Schlafzimmer");
+          y+=${firstline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Temperatur");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.1f °C", id(schlafzimmer_temp).state);
-          y+=nextline;
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.1f °C", id(schlafzimmer_temp).state);
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Luftfeuchte");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f%%", id(schlafzimmer_humid).state);
-          y+=nextline;
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f%%", id(schlafzimmer_humid).state);
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Helligkeit");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f lx", id(schlafzimmer_illumination).state);
-          y+=nextline;
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f lx", id(schlafzimmer_illumination).state);
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "CO2");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f mmol", id(schlafzimmer_co2).state);
-          y+=nextline;
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f mmol", id(schlafzimmer_co2).state);
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Blutzucker");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.1f mmol", id(blood_sugar_mmol).state);
           
           
      - id: dachboden
        lambda: |-
           int y = 1;
-          it.print(xres/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Dachboden");
-          y+=firstline;
+          it.print(${x_res}/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Dachboden");
+          y+=${firstline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Temperatur");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.1f °C", id(dachboden_temp).state);
-          y+=nextline;
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.1f °C", id(dachboden_temp).state);
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Luftfeuchte");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f%%", id(dachboden_humid).state);
-          y+=nextline;
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f%%", id(dachboden_humid).state);
+          y+=${nextline};
           it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Helligkeit");
-          it.printf(xres-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f lx", id(dachboden_illumination).state);    
+          it.printf(${x_res}-1, y, id(${font_medium}), TextAlign::TOP_RIGHT, "%.0f lx", id(dachboden_illumination).state);
