@@ -1,6 +1,13 @@
 substitutions:
   esp_name: TTGO Display #Device Name
   esp_hostname: ttgo_display
+  x_res: '240'
+  y_res: '320'
+  x_space: '20'
+  y_space: '15'
+  font_small: 'sans_medium_15'
+  font_medium: 'sans_medium_28'
+  font_large: 'sans_bold_38'
   
 esphome:
   name: ${esp_hostname}
@@ -31,29 +38,7 @@ ota:
 
 font: !include common/fonts.yaml
 
-color:
-  - id: my_red
-    red: 100%
-    green: 0%
-    blue: 0%
-  - id: my_yellow
-    red: 100%
-    green: 100%
-    blue: 0%
-  - id: my_green
-    red: 0%
-    green: 100%
-    blue: 0%
-  - id: my_blue
-    red: 0%
-    green: 0%
-    blue: 100%
-  - id: my_gray
-    red: 50%
-    green: 50%
-    blue: 50%
-
-
+color: !include common/colors.yaml
 
 binary_sensor:
   - platform: gpio
@@ -185,6 +170,7 @@ globals:
      type: int
      restore_value: no
      initial_value: '0'
+
 interval:
   - interval: 50ms
     then:
@@ -202,18 +188,10 @@ switch:
     name: "Backlight"
     id: backlight
 
-time:
-  - platform: homeassistant
-    id: ntp
-    timezone: Europe/Berlin
-    on_time_sync:
-      - then:
-        - component.update: sunrise
-        - component.update: sunset
+time: !include common/time.yaml
 
-sun:
-  latitude: 54.0887°
-  longitude: 12.1405°   
+sun: !include common/sun.yaml
+
   
 i2c:
   sda: 21
@@ -234,33 +212,33 @@ display:
     rotation: 90
     update_interval: 500ms
     lambda: |-
-      it.rectangle(0,  0, it.get_width(), it.get_height(), id(my_blue));
+      it.rectangle(0,  0, it.get_width(), it.get_height(), id(BLUE));
       if (id(mediaplayer_schlafzimmer_schreibtisch).state == "playing") {
         
-        //it.printf(240 / 2, 140 / 3, id(sans_medium_28), id(my_yellow), TextAlign::CENTER, id(mediaplayer_schlafzimmer_schreibtisch_track).state.c_str());
+        //it.printf(${x_res} / 2, 140 / 3, id(${font_medium}), id(YELLOW), TextAlign::CENTER, id(mediaplayer_schlafzimmer_schreibtisch_track).state.c_str());
         std::string printout=id(mediaplayer_schlafzimmer_schreibtisch_track).state.c_str();
         int clength = printout.length();
         id(length)=clength*25;
-        it.print(id(coords), 32, id(sans_medium_28), printout.c_str());;
+        it.print(id(coords), 32, id(${font_medium}), printout.c_str());;
       }
       else {
-        it.strftime(240 / 2, 50, id(sans_medium_28), id(my_gray), TextAlign::CENTER, "%H:%M:%S", id(ntp).now());
+        it.strftime(${x_res} / 2, 50, id(${font_medium}), id(GRAY), TextAlign::CENTER, "%H:%M:%S", id(ntp).now());
       }
-      //it.strftime((240 / 2), (140 / 3) * 2 + 5, id(sans_medium_56), id(my_gray), TextAlign::CENTER, "%H:%M:%S", id(ntp).now());
-      it.graph(0, 65, id(blood_sugar_mmol_graph),my_red);
-      it.printf(5, 2, id(sans_medium_28), id(my_yellow), TextAlign::TOP_LEFT, "%.2f", id(tof).state);
-      it.printf(70, 2, id(sans_medium_28), id(my_gray), TextAlign::TOP_LEFT, "%.0f%%", id(batt).state);
+      //it.strftime((${x_res} / 2), (140 / 3) * 2 + 5, id(sans_medium_56), id(GRAY), TextAlign::CENTER, "%H:%M:%S", id(ntp).now());
+      it.graph(0, 65, id(blood_sugar_mmol_graph), RED);
+      it.printf(5, 2, id(${font_medium}), id(YELLOW), TextAlign::TOP_LEFT, "%.2f", id(tof).state);
+      it.printf(70, 2, id(${font_medium}), id(GRAY), TextAlign::TOP_LEFT, "%.0f%%", id(batt).state);
       if (id(blood_sugar_mmol).state < 4) {
-        it.printf(5, 70, id( sans_bold_38), id(my_red), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+        it.printf(5, 70, id(${font_large}), id(RED), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
       }
       else {
-        it.printf(5, 70, id( sans_bold_38), id(my_yellow), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
+        it.printf(5, 70, id(${font_large}), id(YELLOW), TextAlign::TOP_LEFT, "%.1f", id(blood_sugar_mmol).state);
       }
 
 
       if (id(system_status).state) {
-        it.print(235, 2, id(sans_medium_28), id(my_green), TextAlign::TOP_RIGHT, "Online");
+        it.print(${x_res}-5, 2, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Online");
       }
       else {
-        it.print(235, 2, id(sans_medium_28), id(my_red), TextAlign::TOP_RIGHT, "Offline");
+        it.print(${x_res}-5, 2, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "Offline");
       }
