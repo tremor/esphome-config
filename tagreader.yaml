@@ -63,8 +63,6 @@ text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
 
-esp32_ble_tracker:
-
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
     
@@ -96,14 +94,6 @@ rc522_spi:
     then:
     - homeassistant.tag_scanned: !lambda 'return x;'
 
-binary_sensor:
-  - platform: status
-    name: "${esp_name} Status"
-  # Presence based on MAC address
-  - platform: ble_presence
-    mac_address: !secret g6_mac
-    name: "DexCom MAC at ${esp_name} detected"
-    
 # Configure LED
 light:
 - platform: fastled_clockless

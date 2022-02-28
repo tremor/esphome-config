@@ -57,6 +57,13 @@ font:
     size: 38
   - file: "fonts/GoogleSans-Medium.ttf"
     id: font_value
+    glyphs:
+      ['&', '@', '!', ',', '.', '?', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
+       '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
+       'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+       'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
+       'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+       'u', 'v', 'w', 'x', 'y', 'z','å', 'Ä', 'ä', 'Ö', 'ö', 'Ü', 'ü', '/']
     size: 56    
   - file: "fonts/GoogleSans-Medium.ttf"
     id: font_footer
@@ -267,7 +274,14 @@ text_sensor:
     entity_id: sensor.openweathermap_precipitation_kind
     id: fc_prec
     internal: true
-
+  - platform: homeassistant
+    entity_id: sensor.rostock_lichtenhagen_to_butzow
+    id: hro_buz
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.rostock_lichtenhagen_to_ribnitz_damgarten_west
+    id: hro_rdg
+    internal: true
   - platform: homeassistant
     entity_id: sensor.openweathermap_forecast_condition
     id: fc_weather
@@ -486,20 +500,20 @@ display:
           it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "%");
         
 
-          //Schlafzimmer
+          //Bahn
           y +=cat_pad;
-          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Schlafzimmer");
-          it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F07E4"); //CO2
-          y+= val_pad;      
-          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(schlafzimmer_temp).state);
-          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
-          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(schlafzimmer_co2).state);      
-          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "ppm");
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Bützow");
+          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Ribnitz"); 
+          y+= val_pad;
+          it.printf(1, y, id(font_value), TextAlign::BASELINE_LEFT, " %s", id(hro_buz).state.c_str());
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "");
+          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%s", id(hro_rdg).state.c_str());      
+          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "");
           
           //Wohnzimmer
           y+= val_pad;  
           it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Wohnzimmer");
-          it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A"); //CO2
+          it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A");
           y+= val_pad;      
           
           it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(wohnzimmer_temp).state);
