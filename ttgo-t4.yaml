@@ -161,6 +161,32 @@ sensor:
     id: dachboden_illumination
     internal: true
     
+  - platform: rotary_encoder
+    name: "Rotary Encoder"
+    id: rotator
+    pin_a: 19
+    pin_b: 26
+    on_clockwise:
+      then:
+        - logger.log: "Turned Clockwise"
+        - lambda: |-
+              id(countdown) = 10;
+              id(markerpoint) += 1;
+        - script.execute: check_markerpoint_above
+        - switch.turn_on: background
+        - display.page.show: wohnzimmer
+
+    on_anticlockwise:
+      then:
+        - logger.log: "Turned Anticlockwise"
+        - lambda: |-
+              id(countdown) = 10;
+              id(markerpoint) -= 1;
+        - script.execute: check_markerpoint_below
+        - switch.turn_on: background
+        - display.page.show: wohnzimmer
+
+     
 binary_sensor:
   - platform: gpio
     name: "BUTTON_LINKS"
@@ -199,6 +225,18 @@ binary_sensor:
     name: "BUTTON_MITTE"
     pin:
       number: 37
+      inverted: true
+    on_press:
+      then:
+        - lambda: |-
+             id(countdown) = 10;
+        - script.execute: button_toggle
+        - switch.turn_on: background
+        - display.page.show: wohnzimmer
+  - platform: gpio
+    name: "Rotary Enter"
+    pin:
+      number: 19
       inverted: true
     on_press:
       then:

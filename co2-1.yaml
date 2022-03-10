@@ -1,8 +1,8 @@
 substitutions:
   esp_name: CO2 Sensor #Device Name
   esp_hostname: co2_1
-  run_time: 24h #can be as long as needed to get data 
-  sleep_time: 1min # normal sleep time
+  run_time: 1h #can be as long as needed to get data 
+  sleep_time: 10s # normal sleep time
   away_sleep_time: 1h # sleep time when nobody's at home
   night_sleep_time: 6h # 1st sleep time after midnight  
   x_res: '128'
@@ -49,6 +49,7 @@ mqtt: !include common/mqtt.yaml
 
 deep_sleep:
   run_duration: ${run_time}
+  sleep_duration: ${sleep_time}
   id: deep_sleep_1
   
 text_sensor:
@@ -66,7 +67,7 @@ globals:
      initial_value: '0'
 
 interval:
-  - interval: 1min
+  - interval: 1s
     then:
     - lambda: |-
         if (id(burnin_y) < ${y_res}-${y_space} ) {

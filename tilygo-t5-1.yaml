@@ -55,8 +55,6 @@ font:
   - file: "fonts/GoogleSans-Bold.ttf"
     id: font_name
     size: 38
-  - file: "fonts/GoogleSans-Medium.ttf"
-    id: font_value
     glyphs:
       ['&', '@', '!', ',', '.', '?', '"', '%', '(', ')', '+', '-', '_', ':', '°', '0',
        '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
@@ -64,6 +62,8 @@ font:
        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ', 'a', 'b', 'c', 'd', 'e', 'f',
        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
        'u', 'v', 'w', 'x', 'y', 'z','å', 'Ä', 'ä', 'Ö', 'ö', 'Ü', 'ü', '/']
+  - file: "fonts/GoogleSans-Medium.ttf"
+    id: font_value
     size: 56    
   - file: "fonts/GoogleSans-Medium.ttf"
     id: font_footer
@@ -117,6 +117,7 @@ font:
       - "\U000F03C8" # Vorlauftemperatur
       - "\U000F081C" # Tuer offen
       - "\U000F081B" # Tuer geschlossen
+      - "\U000F0A72" # Solar Power
       
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: font_icons_tiny
@@ -234,6 +235,18 @@ sensor:
   - platform: homeassistant
     entity_id: sensor.lumi_lumi_weather_39c7b106_humidity
     id: bad_unten_humid
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_yesterday
+    id: solar_yesterday
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_today
+    id: solar_today
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_power
+    id: solar_now
     internal: true
   - platform: lilygo_t5_47_battery
     id: batt_volt
@@ -507,19 +520,18 @@ display:
           y+= val_pad;
           it.printf(1, y, id(font_value), TextAlign::BASELINE_LEFT, " %s", id(hro_buz).state.c_str());
           it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "");
-          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%s", id(hro_rdg).state.c_str());      
+          it.printf(x2v+unit_pad+50, y, id(font_value), TextAlign::BASELINE_RIGHT, "%s", id(hro_rdg).state.c_str());      
           it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "");
           
-          //Wohnzimmer
+          //Solar
           y+= val_pad;  
-          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Wohnzimmer");
-          it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A");
-          y+= val_pad;      
-          
-          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(wohnzimmer_temp).state);
-          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
-          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(wohnzimmer_humid).state);      
-          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "%");
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Solar heute");
+          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "gestern");
+          y+= val_pad;
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.3f", id(solar_today).state);
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "kWh");
+          it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.3f", id(solar_yesterday).state);      
+          it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "kWh");
 
           //Fensterstatus
           y+= val_pad;  
@@ -564,10 +576,10 @@ display:
       
           y+=div_pad*3+div_thickness;
   
-          // Energie und Vorlauf
-          it.printf(x1i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F03C8"); //vorlauf_temperatur
-          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(heizung_isttemperatur).state);
-          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
+          // Energie und Zucker
+          it.printf(x1i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F0A72"); //Solar Power
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(solar_now).state);
+          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "W");
           it.printf(x2i, y, id(font_icons_small), TextAlign::BASELINE_CENTER, "\U000F1126"); // blood-sugar
           it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(blood_sugar_mmol).state);
           it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "mmol");
