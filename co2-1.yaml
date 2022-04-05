@@ -33,7 +33,7 @@ ethernet:
 # Enable logging
 logger:
   baud_rate: 0
-  level: DEBUG
+  level: INFO
 
 # Enable Home Assistant API
 api:
@@ -143,6 +143,12 @@ switch:
      - display.page.show: bloodsugar
      - component.update: oled    
      
+     
+button:
+  - platform: wake_on_lan
+    name: "Wake LG TV"
+    target_mac_address: A8:23:FE:5B:A6:B4
+    
 #esp32_ble_tracker:
 #binary_sensor:
   # Presence based on MAC address

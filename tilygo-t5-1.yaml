@@ -118,6 +118,8 @@ font:
       - "\U000F081C" # Tuer offen
       - "\U000F081B" # Tuer geschlossen
       - "\U000F0A72" # Solar Power
+      - "\U000F06D9" # Garage geschlossen
+      - "\U000F06DA" # Garage offen
       
   - file: 'fonts/materialdesignicons-webfont.ttf'
     id: font_icons_tiny
@@ -564,9 +566,9 @@ display:
           if (id(tuer_durchgang).state == 0) {
           it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
           if (id(garage_tor).state == 1) {
-          it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
+          it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F06DA");}
           if (id(garage_tor).state == 0) {
-          it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
+          it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F06D9");}
 
       
           //Divider
