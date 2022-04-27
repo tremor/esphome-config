@@ -11,7 +11,8 @@ esphome:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-
+  use_address: 10.11.30.50
+  
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "${esp_hostname}"
@@ -29,19 +30,20 @@ api:
 ota:
   password: !secret password
 
-time: !include common/time.yaml
+#time: !include common/time.yaml
 
-sun: !include common/sun.yaml 
+#sun: !include common/sun.yaml 
 
-mqtt: !include common/mqtt.yaml
+#mqtt: !include common/mqtt.yaml
 
-deep_sleep:
-  sleep_duration: ${sleep_time}
-  id: deep_sleep_1
+#deep_sleep:
+#  sleep_duration: ${sleep_time}
+#  run_duration: 60min
+#  id: deep_sleep_1
 
 text_sensor:
-  - <<: !include common/text_sensor_sunrise.yaml
-  - <<: !include common/text_sensor_sunset.yaml
+#  - <<: !include common/text_sensor_sunrise.yaml
+#  - <<: !include common/text_sensor_sunset.yaml
   - platform: homeassistant
     entity_id: sensor.flsunq5_time_remaining
     id: flsunq5_time_remaining
@@ -55,23 +57,23 @@ binary_sensor:
   - platform: homeassistant
     entity_id: switch.tasmota_e868e7469f95_switch_relay_1
     id: flsunq5_switch
-    on_state:
-    - lambda: |-
-        if (id(flsunq5_switch).state) {
-          - display.page.show: page1;
-        } else {
-          - display.page.show: page3;
-        }
+    #on_state:
+    #  - display.page.show: !lambda |-
+    #       if (id(flsunq5_switch).state) {
+    #         return id(page1);
+    #       } else {
+    #         return id(page3);
+    #       }
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
   - platform: uptime
-    name: Uptime Sensor
+    name: "${esp_name}Uptime Sensor"
     id: uptime_sensor
     update_interval: 10s
-    on_value_range:
-      - above: 60
-        then:
-        - display.page.show: page3
+    #on_value_range:
+    #  - above: 60
+    #    then:
+    #    - display.page.show: page3
   - platform: homeassistant
     entity_id: sensor.ender3pro_hotend_actual
     id: ender3pro_hotend_actual
@@ -88,13 +90,13 @@ sensor:
   - platform: homeassistant
     entity_id: sensor.flsunq5_hotend_actual
     id: flsunq5_hotend_actual
-    on_value_range:
-      - above: 50
-        then:
-        - display.page.show: page2
-      - below: 50
-        then:
-        - display.page.show: page1
+    #on_value_range:
+    #  - above: 50
+    #    then:
+    #    - display.page.show: page2
+    #  - below: 50
+    #    then:
+    #    - display.page.show: page1
   - platform: homeassistant
     entity_id: sensor.flsunq5_current_progress
     id: flsunq5_current_progress
@@ -122,6 +124,12 @@ sensor:
   - platform: homeassistant
     entity_id: sensor.lumi_lumi_weather_194ca006_temperature
     id: petg_passive_box_temperature
+  - platform: homeassistant
+    entity_id: sensor.hx711_links
+    id: filamentrolle_links
+  - platform: homeassistant
+    entity_id: sensor.hx711_rechts
+    id: filamentrolle_rechts
     
 i2c:
   sda: 5
@@ -138,16 +146,17 @@ display:
     pages:
       - id: page1
         lambda: |-
-          it.printf(128, 0, id(sans_medium_15), TextAlign::TOP_RIGHT, "akt. Humid: %.0f%%", id(petg_aktive_box_humidity).state);
-          it.printf(0, 15, id(sans_medium_15), TextAlign::TOP_LEFT, "Temp:%.0f°C", id(petg_aktive_box_temperature).state);
-          it.printf(128, 30, id(sans_medium_15), TextAlign::TOP_RIGHT, "pass. Humid: %.0f%%", id(petg_passive_box_humidity).state);
+          it.printf(0, 0, id(sans_medium_15), TextAlign::TOP_LEFT, "R1: %.0fg", id(filamentrolle_links).state);
+          it.printf(128, 0, id(sans_medium_15), TextAlign::TOP_RIGHT, "R2:%.0fg", id(filamentrolle_rechts).state);
+          it.printf(0, 15, id(sans_medium_15), TextAlign::TOP_LEFT, "aktiv:%.0f%%", id(petg_aktive_box_temperature).state);
+          it.printf(0, 30, id(sans_medium_15), TextAlign::TOP_LEFT, "pass.: %.0f%%", id(petg_passive_box_humidity).state);
           it.printf(0, 45, id(sans_medium_15), TextAlign::TOP_LEFT, "E3P:%.0f°C, Q5:%.0f°C", id(ender3pro_bed_actual).state, id(flsunq5_bed_actual).state);
       - id: page2
         lambda: |-
           it.printf(0, 0, id(sans_medium_10), "E3: %.0f%%, H: %.0f°C, B:%.0f°C", id(ender3pro_current_progress).state, id(ender3pro_hotend_actual).state, id(ender3pro_bed_actual).state);
-          it.printf(0, 15, id(sans_medium_10), "Zeit: %s, ABox: %.0f%%", id(ender3pro_time_remaining).state.c_str(),id(sensor_aktive_box).state);
+          it.printf(0, 15, id(sans_medium_10), "Zeit: %s, R1: %.0f%g", id(ender3pro_time_remaining).state.c_str(),id(filamentrolle_links).state);
           it.printf(0, 30, id(sans_medium_10), "Q5: %.0f%%, H: %.0f°C, B: %.0f°C", id(flsunq5_current_progress).state, id(flsunq5_hotend_actual).state, id(flsunq5_bed_actual).state);
-          it.printf(0, 45, id(sans_medium_10), "Zeit: %s, LBox: %.0f%%", id(flsunq5_time_remaining).state.c_str(), id(sensor_lagerbox).state);
+          it.printf(0, 45, id(sans_medium_10), "Zeit: %s, R2: %.0f%%", id(flsunq5_time_remaining).state.c_str(), id(filamentrolle_rechts).state);
           it.printf(0, 60, id(sans_medium_10), "A-Box: %.0f%%, Lagerbox: %.0f%%", id(sensor_aktive_box).state, id(sensor_lagerbox).state);
       - id: page3
         lambda: |-

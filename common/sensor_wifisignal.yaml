@@ -2,3 +2,4 @@
     name: "WiFi Signal Sensor ${esp_hostname}"
     update_interval: 60s
     id: wifisignal
+    internal: false

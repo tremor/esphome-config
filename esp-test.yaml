@@ -1,6 +1,6 @@
 substitutions:
-  esp_name: HX711 #Device Name
-  esp_hostname: hx711
+  esp_name: esp-test #Device Name
+  esp_hostname: esp-test
   run_time: 10h #can be as long as needed to get data 
   sleep_time: 5min # normal sleep time
   
@@ -12,7 +12,7 @@ esphome:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: 10.11.30.111
+  #use_address: 10.11.30.105
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -36,7 +36,8 @@ time: !include common/time.yaml
 sun: !include common/sun.yaml 
 
 mqtt: !include common/mqtt.yaml
-
+font: !include common/fonts.yaml
+color: !include common/colors.yaml
 deep_sleep:
   sleep_duration: ${sleep_time}
   id: deep_sleep_1
@@ -48,31 +49,35 @@ text_sensor:
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
 
-  - platform: hx711
-    name: "HX711 links"
-    dout_pin: '16'
-    clk_pin: '17'
-    gain: 128
-    update_interval: 60s
-    filters:
-      ##- multiply: -1
-      - calibrate_linear:
-          - -361004 -> 0
-          - -428839 -> 171
-          - -674148 -> 795
-    unit_of_measurement: g
-    internal: false
-    
-  - platform: hx711
-    name: "HX711 rechts"
-    dout_pin: '21'
-    clk_pin: '22'
-    gain: 128
-    update_interval: 60s
-    filters:
-      - calibrate_linear:
-          - 182428 -> 0
-          - 249871 -> 171
-          - 499868 -> 795
-    unit_of_measurement: g
-    internal: false
+
+binary_sensor:
+  - platform: status
+    name: "${esp_name} Status"
+
+#pn532_i2c:
+#  update_interval: 500ms
+#  on_tag:
+#    then:
+#    - homeassistant.tag_scanned: !lambda 'return x;'
+
+#i2c:
+#  sda: 16
+#  scl: 17
+#  scan: true
+#  id: bus_a
+  
+spi:
+  clk_pin: 17
+  mosi_pin: 26
+
+display:
+  - platform: ssd1351_spi
+    model: "SSD1351 128x128"
+    reset_pin: 22
+    cs_pin: 21
+    dc_pin: 16
+    lambda: |-
+      it.print(0, 0, id(sans_medium),id(YELLOW), "Hello");
+      it.print(0, 40, id(sans_medium),id(RED), "Hello");
+      it.print(00, 40, id(sans_medium),id(BLUE), "Hello");
+  

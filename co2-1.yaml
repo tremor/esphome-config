@@ -42,8 +42,16 @@ api:
 ota:
   password: !secret password
 
-time: !include common/time.yaml
-
+time: #!include common/time.yaml
+    - platform: sntp
+      on_time:
+         # Every day at 10:30
+          - seconds: 0
+            minutes: 30
+            hours: 10
+            then: 
+               - switch.turn_on: smart_scale_manual_tare_action_switch
+             
 sun: !include common/sun.yaml 
 
 mqtt: !include common/mqtt.yaml
@@ -58,14 +66,33 @@ text_sensor:
   - <<: !include common/text_sensor_sunset.yaml
 
 globals:
-   - id: burnin_x
-     type: int
-     restore_value: no
-     initial_value: '0'
-   - id: burnin_y
-     type: int
-     restore_value: no
-     initial_value: '0'
+  - id: burnin_x
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: burnin_y
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: initial_zero
+    type: float
+    restore_value: yes
+    # NOTE: make sure to align this value to the one used in "calibrate_linear" below!
+    initial_value: '970928'
+  - id: auto_tare_enabled
+    type: bool
+    restore_value: yes
+    initial_value: 'true'
+
+  - id: auto_tare_difference
+    type: float
+    restore_value: yes
+    initial_value: '0'
+    
+  - id: manual_tare_flag
+    type: bool
+    restore_value: no
+    initial_value: 'false'
 
 interval:
   - interval: 1s
@@ -89,20 +116,31 @@ interval:
 i2c:
   sda: 14
   scl: 15
+  scan: true
+  id: bus_a
   
 uart:
-  rx_pin: 3
-  tx_pin: 1
-  baud_rate: 9600
-
+  - id: pmsx
+    rx_pin: 12
+    baud_rate: 9600
+   
+  - id: co2
+    rx_pin: 3
+    tx_pin: 1
+    baud_rate: 9600
+  
 sensor:
   - platform: mhz19
+    uart_id: co2
     co2:
       name: "MH-Z19 CO2 Value"
+      internal: false
     temperature:
       name: "MH-Z19 Temperature"
+      internal: false
     update_interval: 60s
     automatic_baseline_calibration: false
+
   #- platform: xiaomi_lywsd03mmc
   #  mac_address: A4:C1:38:17:69:7A
   #  bindkey: "cd4feb2e97fbdcca84214c56a77bf24d"
@@ -120,18 +158,117 @@ sensor:
     entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_illuminance
     id: wohnzimmer_illumination
     internal: true
+  #- platform: hx711
+  #  id: hx711
+  #  name: "Schlafzimmer Bett HX711"
+  #  dout_pin: '2'
+  #  clk_pin: '4'
+  #  gain: 128
+  #  update_interval: 5s
+  #  filters:
+  #    - calibrate_linear:
+  #        - 1209178 -> 0
+  #        - 1968137 -> 120
+  #  unit_of_measurement: kg
+  # RAW Scale input
   - platform: hx711
-    name: "HX711 Value"
+    id: smart_scale_hx711_value_raw
+    internal: True
     dout_pin: '2'
     clk_pin: '4'
     gain: 128
-    update_interval: 1s
-    #filters:
-    #  - calibrate_linear:
-    #      - 46350 -> 0
-    #      - 75358 ->0.074
-    #      - 590000 -> 1.400
-    #unit_of_measurement: kg
+    unit_of_measurement: kg
+    accuracy_decimals: 3
+    update_interval: 2s
+    internal: false
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 1
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: smart_scale_hx711_value
+            state: !lambda 'return id(smart_scale_hx711_value_raw).state;'
+        - if:
+            condition:
+              and:
+                - lambda: 'return id(auto_tare_enabled);'
+                # current smart scale value is below approx. 10KG (raw value -275743) aka nobody is standing on the scale
+                - lambda: 'return id(smart_scale_hx711_value).state < 30.0;'
+            then:
+              - if:
+                  condition:
+                    # current raw scale value is below expected zero value
+                    - lambda: 'return id(smart_scale_hx711_value_raw).state < (id(initial_zero) - id(auto_tare_difference));'
+                  then:
+                    # INcrease Auto-Tare offset to slowly align real zero value with expected zero value
+                    - lambda: |-
+                        id(auto_tare_difference) += 10;
+                  else:
+                    # DEcrease Auto-Tare offset to slowly align real zero value with expected zero value
+                    - lambda: |-
+                        id(auto_tare_difference) -= 10;
+    
+  # Mapped value to KG
+  - platform: template
+    id: smart_scale_hx711_value
+    name: "Smart Scale HX711 Value"
+    internal: False
+    filters:
+      # apply auto_tare difference
+      - lambda: 'return x + id(auto_tare_difference);'
+      # apply rough calibration
+      - calibrate_linear:
+          # retrieve these values by evaluating the raw values with loads of known mass.
+          # note that a bigger difference between measurements usually results in higher resolution,
+          # so measure 0 Kg and the highest known mass you have (like f.ex. your own weight, measured by a normal scale with good accuracy)
+          - 970928 -> 0
+          - 1968137 -> 120
+      # map values below 0.1 to 0 (to decrease value changes due to random fluctuation)
+      - lambda: |-
+          if (x <= 0.5) {
+            return 0.0;
+          } else {
+            return x;
+          }
+          
+    unit_of_measurement: kg
+    accuracy_decimals: 2
+    update_interval: 2s
+    
+    
+  - platform: pmsx003
+    type: PMSX003
+    uart_id: pmsx
+    pm_1_0:
+      name: "Particulate Matter <1.0µm Concentration"
+      internal: false
+      filters:
+      - sliding_window_moving_average:
+         window_size: 15
+         send_every: 15
+      - filter_out: 0.0
+      on_value:
+       then:
+       - delay: 500ms
+       - switch.turn_off: PMSX
+    pm_2_5:
+      name: "Particulate Matter <2.5µm Concentration"
+      internal: false
+      filters:
+      - sliding_window_moving_average:
+         window_size: 15
+         send_every: 15
+      - filter_out: 0.0
+    pm_10_0:
+      name: "Particulate Matter <10.0µm Concentration"
+      internal: false
+      filters:
+      - sliding_window_moving_average:
+         window_size: 15
+         send_every: 15
+      - filter_out: 0.0
 switch:    
   - platform: template
     name: "OLED Display"
@@ -142,6 +279,43 @@ switch:
     turn_on_action:
      - display.page.show: bloodsugar
      - component.update: oled    
+  - platform: gpio
+    id: PMSX
+    name: "PMSX Remote"
+    on_turn_off:
+    - delay: 120s
+    - switch.turn_on: PMSX
+    pin:
+      number: 0
+      
+      
+  ## Switch to enable/disable the auto tare feature
+  - platform: template
+    id: smart_scale_continuous_tare_enabled
+    name: "Smart Scale Continuous Tare Enabled"
+    lambda: |-
+      return id(auto_tare_enabled);
+    turn_on_action:
+      - lambda: |-
+          id(auto_tare_enabled) = true;
+    turn_off_action:
+      - lambda: |-
+          id(auto_tare_enabled) = false;
+  
+  ## Switch used to initiate a manual tare
+  - platform: template
+    id: smart_scale_manual_tare_action_switch
+    name: "Smart Scale Manual Tare Action"
+    lambda: |-
+      return id(manual_tare_flag);
+    turn_on_action:
+      - lambda: |-
+          id(auto_tare_difference) = id(initial_zero) - id(smart_scale_hx711_value_raw).state;
+      - switch.turn_off: smart_scale_manual_tare_action_switch
+    turn_off_action:
+      - lambda: |-
+          id(manual_tare_flag) = false;
+  ## Ende neu
      
      
 button:

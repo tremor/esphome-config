@@ -26,7 +26,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: 10.11.30.11
+  use_address: 10.11.30.114
   
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -200,7 +200,7 @@ sensor:
     entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_temperature
     id: wohnzimmer_temp
   - platform: homeassistant
-    entity_id: sensor.temp_heizung_aussentemperatur
+    entity_id: sensor.aussentemperatur
     id: out_temp
   - platform: homeassistant
     entity_id: sensor.heizkorperthermostat_kompakt_temperature
