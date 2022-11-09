@@ -1,83 +1,77 @@
 substitutions:
   esp_name: esp-test #Device Name
   esp_hostname: esp-test
-  run_time: 10h #can be as long as needed to get data 
-  sleep_time: 5min # normal sleep time
+  run_time: 999h #can be as long as needed to get data 
+  sleep_time: 1min # normal sleep time
   
 esphome:
   name: ${esp_hostname}
-  platform: ESP32
-  board: wemos_d1_mini32
-  
+
+esp8266:
+  board: esp01_1m
+
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  #use_address: 10.11.30.105
+  use_address: 10.11.30.216
+  networks:
+  - ssid: meraki-eduroam
+    eap:
+      identity: "ms1511@uni-rostock.de"
+      username: "ms1511@uni-rostock.de"
+      password: "E3afo582!neu"
+      certificate_authority: ca_cert.pem
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
 
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "${esp_hostname}"
-    password: !secret password
 
-captive_portal:
-
-# Enable logging
 logger:
 
-# Enable Home Assistant API
 api:
   password: !secret password
 
 ota:
   password: !secret password
 
-time: !include common/time.yaml
-
-sun: !include common/sun.yaml 
-
 mqtt: !include common/mqtt.yaml
-font: !include common/fonts.yaml
-color: !include common/colors.yaml
+
 deep_sleep:
+  run_duration: ${run_time}
   sleep_duration: ${sleep_time}
   id: deep_sleep_1
-  
-text_sensor:
-  - <<: !include common/text_sensor_sunrise.yaml
-  - <<: !include common/text_sensor_sunset.yaml
-
-sensor:
-  - <<: !include common/sensor_wifisignal.yaml
-
 
 binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Sonoff S20 Button"
   - platform: status
-    name: "${esp_name} Status"
+    name: "Sonoff S20 Status"
+  - platform: gpio
+    pin: GPIO2
+    name: "Sonoff S20 Sensor"
 
-#pn532_i2c:
-#  update_interval: 500ms
-#  on_tag:
-#    then:
-#    - homeassistant.tag_scanned: !lambda 'return x;'
+switch:
+  - platform: restart
+    name: "Sonoff S20 Restart"
 
-#i2c:
-#  sda: 16
-#  scl: 17
-#  scan: true
-#  id: bus_a
-  
-spi:
-  clk_pin: 17
-  mosi_pin: 26
+output:
+  - platform: esp8266_pwm
+    id: s20_green_led
+    pin:
+      number: GPIO13
+      inverted: true
+  # Note: do *not* make the relay a dimmable (PWM) signal, relays cannot handle that
+  - platform: gpio
+    id: s20_relay
+    pin: GPIO12
 
-display:
-  - platform: ssd1351_spi
-    model: "SSD1351 128x128"
-    reset_pin: 22
-    cs_pin: 21
-    dc_pin: 16
-    lambda: |-
-      it.print(0, 0, id(sans_medium),id(YELLOW), "Hello");
-      it.print(0, 40, id(sans_medium),id(RED), "Hello");
-      it.print(00, 40, id(sans_medium),id(BLUE), "Hello");
-  
+light:
+  - platform: monochromatic
+    name: "Sonoff S20 Green LED"
+    output: s20_green_led
+  - platform: binary
+    name: "Sonoff S20 Relay"
+    output: s20_relay

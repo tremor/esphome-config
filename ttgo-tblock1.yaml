@@ -1,0 +1,162 @@
+substitutions:
+  esp_name: ESP T-Block Display #Device Name
+  esp_hostname: ttgo-tblock1
+  run_time: 1min #can be as long as needed to get data 
+  sleep_time: 5min # normal sleep time
+  away_sleep_time: 1h # sleep time when nobody's at home
+  night_sleep_time: 6h # 1st sleep time after midnight
+
+esphome:
+  name: ${esp_hostname}
+  platform: esp32
+  board: ttgo-t-watch
+  libraries: ciniml/WireGuard-ESP32
+  includes: wg-settings-nous-power-1.h
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret password
+
+ota:
+  password: !secret password
+
+wifi:
+  networks:
+  - ssid: !secret wifi_ssid_hotspot
+    password: !secret wifi_hotspot_password
+  - ssid: "eduroam"
+    eap:
+      username: !secret eduroam_user
+      password: !secret eduroam_password
+  use_address: 10.0.50.200
+      
+interval:
+  - interval: 60s
+    then:
+      if:
+        condition:
+          api.connected:
+        then:
+         - logger.log: API is connected! No need for Wireguard!
+        else:
+         - lambda: |
+             static const char* TAG = "wireguard";
+             ESP_LOGD(TAG, "Starting via interval...");
+             if( !wg.is_initialized() ) {
+                        ESP_LOGD(TAG, "Initializing WG interface...");
+                        if( !wg.begin(
+                                local_ip,
+                                private_key,
+                                endpoint_address,
+                                public_key,
+                                endpoint_port) ) {
+                            ESP_LOGD(TAG, "Failed to initialize WG interface.");
+                        }
+                    }
+
+
+
+
+#wifi:
+#  ssid: !secret wifi_ssid
+#  password: !secret wifi_password
+#  use_address: 10.11.30.117
+  
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: "${esp_hostname}"
+#    password: !secret password
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+sun: !include common/sun.yaml
+
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+  
+deep_sleep:
+  run_duration: ${run_time} 
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+  esp32_ext1_wakeup:
+    pins: GPIO39
+    mode: ALL_LOW
+
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
+  
+binary_sensor:
+  - platform: gpio
+    pin: 
+      number: GPIO36
+      inverted: true
+    name: "${esp_name} Button 1"
+    on_press:
+      then:
+         - display.page.show: page1
+         - delay: 5s
+         - display.page.show: page2
+         - delay: 5s
+         - deep_sleep.enter:
+              id: deep_sleep_1
+              sleep_duration: 1min
+sensor:
+  - platform: homeassistant
+    entity_id: sensor.blood_sugar_mmol
+    id: blood_sugar_mmol
+    on_value:
+        then:
+         - display.page.show: page1
+         - delay: 5s
+         - display.page.show: page2
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_today
+    id: solar_today
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_power
+    id: solar_now
+    internal: true
+  
+font: !include common/fonts.yaml
+
+display:
+  - platform: waveshare_epaper
+    cs_pin: 5
+    dc_pin: 19
+    busy_pin: 34
+    reset_pin: 27
+    model: 1.54inv2
+    rotation: 0
+    id: epaper_display
+    full_update_every: 2
+    update_interval: 10s
+    pages:
+      - id: page1
+        lambda: |-
+          #define xres 200
+          #define yres 200
+          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+      - id: page2
+        lambda: |-
+          #define xres 200
+          #define yres 200
+          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+          
+          if (id(blood_sugar_mmol).has_state()) {
+              it.printf(0, 0, id(sans_medium), "%.1f mmol", id(blood_sugar_mmol).state);
+          }
+          if (id(solar_now).has_state()) {
+              it.printf(0, 50, id(sans_medium), "%.0f Watt", id(solar_now).state);
+          }
+          if (id(solar_today).has_state()) {
+              it.printf(0, 100, id(sans_medium), "%.2f kWh", id(solar_today).state);
+          }
+          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());
