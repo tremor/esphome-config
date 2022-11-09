@@ -134,10 +134,8 @@ sensor:
     uart_id: co2
     co2:
       name: "MH-Z19 CO2 Value"
-      internal: false
     temperature:
       name: "MH-Z19 Temperature"
-      internal: false
     update_interval: 60s
     automatic_baseline_calibration: false
 
@@ -180,7 +178,6 @@ sensor:
     unit_of_measurement: kg
     accuracy_decimals: 3
     update_interval: 2s
-    internal: false
     filters:
       - sliding_window_moving_average:
           window_size: 3

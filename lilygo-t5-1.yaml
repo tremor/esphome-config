@@ -27,7 +27,7 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   use_address: 10.11.30.114
-  
+
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "${esp_hostname}"
@@ -152,7 +152,15 @@ binary_sensor:
     name: "${esp_name} Button 1"
     on_press:
       then:
+       - display.page.show: blank
        - component.update: t5_display
+       - delay: 3s
+       - display.page.show: black
+       - component.update: t5_display
+       - delay: 3s
+       - display.page.show: main
+       - component.update: t5_display
+       
       
   - platform: gpio
     pin: 
@@ -171,7 +179,7 @@ binary_sensor:
     id: fenster_schlafzimmer
     internal: true
   - platform: homeassistant
-    entity_id: binary_sensor.shutter_contact_invisible
+    entity_id: binary_sensor.fenster_kueche
     id: fenster_kueche
     internal: true
   - platform: homeassistant
@@ -179,7 +187,7 @@ binary_sensor:
     id: fenster_wohnzimer
     internal: true
   - platform: homeassistant
-    entity_id: binary_sensor.fenster_und_turkontakt
+    entity_id: binary_sensor.fenster_dachboden
     id: fenster_dachboden
     internal: true
   - platform: homeassistant
@@ -187,7 +195,7 @@ binary_sensor:
     id: tuer_wintergarten_durchgang
     internal: true
   - platform: homeassistant
-    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_on_off
+    entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_15070b07_on_off
     id: tuer_durchgang
     internal: true
   - platform: homeassistant
@@ -203,10 +211,10 @@ sensor:
     entity_id: sensor.aussentemperatur
     id: out_temp
   - platform: homeassistant
-    entity_id: sensor.heizkorperthermostat_kompakt_temperature
+    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_temperature
     id: schlafzimmer_temp
   - platform: homeassistant
-    entity_id: sensor.heizung_tageswaerme_vortag
+    entity_id: sensor.wtc_g_pc_tageswarmemenge_vortag_gesamt_we0
     id: tageswaerme_vortag
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
@@ -215,7 +223,7 @@ sensor:
     entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_humidity
     id: wohnzimmer_humid
   - platform: homeassistant
-    entity_id: sensor.heizung_vorlaufisttemperatur
+    entity_id: sensor.hydraulik_vorlauftemperatur_aktuell_hzk0
     id: heizung_isttemperatur
     internal: true
   - platform: homeassistant
@@ -239,7 +247,7 @@ sensor:
     id: bad_unten_humid
     internal: true
   - platform: homeassistant
-    entity_id: sensor.gartenhaus_solar_energy_yesterday
+    entity_id: sensor.gartenhaus_energy_yesterday
     id: solar_yesterday
     internal: true
   - platform: homeassistant
@@ -249,6 +257,14 @@ sensor:
   - platform: homeassistant
     entity_id: sensor.gartenhaus_solar_energy_power
     id: solar_now
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.bring_shopping_list_franzimartin
+    id: einkaufsliste
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.lumi_lumi_weather_aa19b502_temperature
+    id: zigbee_aussentemp
     internal: true
   - platform: lilygo_t5_47_battery
     id: batt_volt
@@ -298,15 +314,21 @@ text_sensor:
     id: hro_rdg
     internal: true
   - platform: homeassistant
+    entity_id: sensor.rostock_lichtenhagen_to_rostock_parkstrasse
+    id: hro_park
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.mecklenburger_allee_rostock_to_am_taklerring
+    id: meck_takl
+    internal: true
+  - platform: homeassistant
     entity_id: sensor.openweathermap_forecast_condition
     id: fc_weather
     internal: true
     on_value: # Actions to perform once data for the last sensor has been received
       then:
         - script.execute: all_data_received     
-  - platform: homeassistant
-    entity_id:  sensor.weathermet_wind_direction
-    id: wind_dir
+
     
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
@@ -326,6 +348,7 @@ script:
     then:
       - component.update: batt_volt
       - component.update: batt
+      - delay: 5s
       - display.page.show: main
       - component.update: t5_display
       - script.execute: enter_sleep     
@@ -493,7 +516,7 @@ display:
           it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Aussentemp.");
           it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Regenwahrsch.");
           y+=val_pad;      
-          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(out_temp).state);
+          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.1f", id(zigbee_aussentemp).state);
           it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "°C");
  
           //Precipitation Icon
@@ -517,21 +540,21 @@ display:
 
           //Bahn
           y +=cat_pad;
-          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Bützow");
-          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Ribnitz"); 
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Parkstr.");
+          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Schule"); 
           y+= val_pad;
-          it.printf(1, y, id(font_value), TextAlign::BASELINE_LEFT, " %s", id(hro_buz).state.c_str());
+          it.printf(1, y, id(font_value), TextAlign::BASELINE_LEFT, " %s", id(hro_park).state.c_str());
           it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "");
-          it.printf(x2v+unit_pad+50, y, id(font_value), TextAlign::BASELINE_RIGHT, "%s", id(hro_rdg).state.c_str());      
+          it.printf(x2v+unit_pad+50, y, id(font_value), TextAlign::BASELINE_RIGHT, "%s", id(meck_takl).state.c_str());      
           it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "");
           
           //Solar
           y+= val_pad;  
-          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Solar heute");
-          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "gestern");
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Einkaufsliste");
+          it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Solar gestern");
           y+= val_pad;
-          it.printf(x1v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.3f", id(solar_today).state);
-          it.print(x1v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "kWh");
+          it.printf(x1v-unit_pad/2-40, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(einkaufsliste).state);
+          it.print(x1v+unit_pad/2-40, y, id(font_name), TextAlign::BASELINE_LEFT, "Dinge");
           it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.3f", id(solar_yesterday).state);      
           it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "kWh");
 

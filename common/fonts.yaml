@@ -1,12 +1,12 @@
 - file: "fonts/GoogleSans-Bold.ttf"
   id: sans_bold_56
-  size: 56 
+  size: 56
 - file: "fonts/GoogleSans-Bold.ttf"
   id: sans_bold_38
   size: 38
 - file: "fonts/GoogleSans-Medium.ttf"
   id: sans_medium_56
-  size: 56    
+  size: 56
 - file: "fonts/GoogleSans-Medium.ttf"
   id: sans_medium_28
   size: 28

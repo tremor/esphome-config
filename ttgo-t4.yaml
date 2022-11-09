@@ -255,11 +255,19 @@ binary_sensor:
     id: schlafzimmer_sensor_0
     internal: true
   - platform: homeassistant
-    entity_id: switch.lowboard_on_off
+    entity_id: switch.kasa_schalter_3_wz_tischlampe
+    id: wohnzimmer_tischlampe
+    internal: true
+  - platform: homeassistant
+    entity_id: switch.kasa_schalter_4_wz_stehlampe
+    id: wohnzimmer_stehlampe
+    internal: true
+  - platform: homeassistant
+    entity_id: switch.wohnzimmer_lowboard_99ad90fe_on_off
     id: wohnzimmer_PS4
     internal: true
   - platform: homeassistant
-    entity_id: switch.tz3000_1obwwnmq_ts011f_99ad90fe_on_off_2
+    entity_id: switch.wohnzimmer_lowboard_99ad90fe_on_off_2
     id: wohnzimmer_LowBoard_Fernseher
     internal: true
   - platform: homeassistant
@@ -271,7 +279,7 @@ binary_sensor:
     id: wohnzimmer_Befeuchter
     internal: true
   - platform: homeassistant
-    entity_id: switch.tz3000_1obwwnmq_ts011f_99ad90fe_on_off_3
+    entity_id: switch.wohnzimmer_lowboard_99ad90fe_on_off_3
     id: wohnzimmer_fujitsu
     internal: true
   - platform: homeassistant
@@ -279,19 +287,19 @@ binary_sensor:
     id: sensor_adguard_filtering
     internal: true
   - platform: homeassistant
-    entity_id: switch.esstisch_on_off
+    entity_id: switch.wohnzimmer_esstisch_7a9747fe_on_off
     id: esstisch_switch_1
     internal: true    
   - platform: homeassistant
-    entity_id: switch.tz3000_1obwwnmq_ts011f_7a9747fe_on_off_2
+    entity_id: switch.wohnzimmer_esstisch_7a9747fe_on_off_2
     id: esstisch_switch_2
     internal: true    
   - platform: homeassistant
-    entity_id: switch.tz3000_1obwwnmq_ts011f_7a9747fe_on_off_3
+    entity_id: switch.wohnzimmer_esstisch_7a9747fe_on_off_3
     id: esstisch_switch_3
     internal: true    
   - platform: homeassistant
-    entity_id: switch.tasmota2_3
+    entity_id: switch.wintergarten_jbl_500_socket_1
     id: wintergarten
     internal: true    
   - platform: homeassistant
@@ -299,7 +307,7 @@ binary_sensor:
     id: bachlauf
     internal: true 
   - platform: homeassistant
-    entity_id: switch.tasmota_2
+    entity_id: switch.8tbhdd
     id: zotac_hdds
     internal: true    
 
@@ -362,8 +370,8 @@ display:
           it.rectangle(1, (id(markerpoint)*${nextline})+${firstline}, ${x_res}-1, ${nextline}, id(RED));
           it.print(${x_res}/2, y, id(${font_small}), TextAlign::TOP_CENTER, "Wohnzimmer");
           y+=${firstline};
-          it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Regal");
-          if (id(wohnzimmer_Licht_Regal).state) {
+          it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Tisch");
+          if (id(wohnzimmer_tischlampe).state) {
            it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {
@@ -418,8 +426,8 @@ display:
            it.printf(${x_res}, y, id(${font_medium}), id(GREEN), TextAlign::TOP_RIGHT, "Aus");
           }
           y+=${nextline};
-          it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Bachlauf");
-          if (id(bachlauf).state) {
+          it.print(1, y, id(${font_medium}), TextAlign::TOP_LEFT, "Stehlampe");
+          if (id(wohnzimmer_stehlampe).state) {
            it.printf(${x_res}, y, id(${font_medium}), id(RED), TextAlign::TOP_RIGHT, "An");
           }
           else {

@@ -52,7 +52,7 @@ text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
     
-font: !include fonts.yaml
+font: !include common/fonts.yaml
 
 interval:
   - interval: 1s

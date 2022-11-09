@@ -4,4 +4,4 @@
   type: sunset
   format: "%H:%M"
   internal: true
-  update_interval: never    
+  update_interval: never 
