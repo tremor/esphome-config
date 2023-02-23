@@ -1,0 +1,13 @@
+broker: 139.30.255.200
+username: !secret mqtt_user
+password: !secret mqtt_password
+discovery: True
+on_message:
+- topic: ${esp_hostname}/ota_mode
+  payload: 'ON'
+  then:
+    - deep_sleep.prevent: deep_sleep_1
+- topic: ${esp_hostname}/sleep_mode
+  payload: 'ON'
+  then:
+    - deep_sleep.enter: deep_sleep_1

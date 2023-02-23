@@ -35,12 +35,16 @@ wifi:
 
 captive_portal:
 
+bluetooth_proxy:
+  active: true
+  
 # Enable logging
 logger:
 
 # Enable Home Assistant API
 api:
-  password: !secret password
+  encryption:
+    key: !secret api_key
   services:
   - service: rfidreader_tag_ok
     then:
@@ -63,6 +67,7 @@ deep_sleep:
 text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
+  - <<: !include common/text_wifiinfo.yaml
 
 sensor:
   - <<: !include common/sensor_wifisignal.yaml

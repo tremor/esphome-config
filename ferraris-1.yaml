@@ -1,6 +1,6 @@
 substitutions:
-  esp_name: HX711 #Device Name
-  esp_hostname: hx711
+  esp_name: Ferraris_1 #Device Name
+  esp_hostname: ferraris-1
   run_time: 10h #can be as long as needed to get data 
   sleep_time: 5min # normal sleep time
   
@@ -49,33 +49,15 @@ text_sensor:
   
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
+  - platform: pulse_counter
+    pin: GPIO18
+    unit_of_measurement: 'kW'
+    name: 'Power Meter House'
+    filters:
+      - multiply: 0.06
+    id: house_power
 
-  - platform: hx711
-    name: "HX711 links"
-    dout_pin: '16'
-    clk_pin: '17'
-    gain: 128
-    update_interval: 60s
-    filters:
-      #- multiply: -1
-      - calibrate_linear:
-          - 361004 -> 0
-          - 428839 -> 171
-          - 674148 -> 795
-    unit_of_measurement: g
-    internal: false
-    
-  - platform: hx711
-    name: "HX711 rechts"
-    dout_pin: '21'
-    clk_pin: '22'
-    gain: 128
-    update_interval: 60s
-    filters:
-      - multiply: -1
-      - calibrate_linear:
-          - -182428 -> 0
-          - -249871 -> 171
-          - -499868 -> 795
-    unit_of_measurement: g
-    internal: false
+  - platform: total_daily_energy
+    name: "Total Daily Energy"
+    power_id: house_power
+    accuracy_decimals: 1

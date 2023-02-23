@@ -1,0 +1,165 @@
+substitutions:
+  esp_name: Nous_A1_1 #Device Name
+  esp_hostname: nousa1-1
+  run_time: 10h #can be as long as needed to get data 
+  sleep_time: 5min # normal sleep time
+  # Higher value gives lower watt readout
+  current_res: "0.00280"
+  # Lower value gives lower voltage readout
+  voltage_div: "775"
+
+
+esphome:
+  name: ${esp_hostname}
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
+  
+wifi:
+  networks:
+  - ssid: eduroam
+    eap:
+      identity: !secret eduroam_user
+      username: !secret eduroam_user
+      password: !secret eduroam_password
+      certificate_authority: ca_cert.pem
+  #- ssid: !secret wifi_ssid
+  #  password: !secret wifi_password
+  use_address: 10.11.30.210
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_hostname}"
+    password: !secret password
+
+# Enable logging
+logger:
+
+ota:
+  password: !secret password
+  on_error:
+    then:
+      - logger.log:
+          format: "OTA update error %d"
+          args: ["x"]
+  on_state_change:
+    then:
+      - logger.log:
+          format: "OTA state change %d"
+          args: ["state"]
+
+web_server:
+  port: 80
+  include_internal: true
+  local: true
+
+time:
+  - platform: sntp
+    id: sntp_time
+
+sun: !include common/sun.yaml 
+
+mqtt: !include common/mqtt.yaml
+
+deep_sleep:
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+
+light:
+  - platform: status_led
+    id: led
+    pin:
+      number: GPIO00
+      inverted: true
+
+binary_sensor:
+  - platform: status
+    name: "${esp_name} - Status"
+
+  # toggle relay on/off
+  - platform: gpio
+    pin:
+      number: GPIO15
+      mode: INPUT_PULLUP
+    id: "button_state"
+    on_press:
+      - switch.toggle: "button_switch"
+
+switch:
+  - platform: template
+    name: "${esp_name} - Switch"
+    icon: mdi:power
+    optimistic: true
+    id: "button_switch"
+    lambda: |-
+      if (id(relay).state) {
+        return true;
+      } else {
+        return false;
+      }
+    turn_on_action:
+      - switch.turn_on: relay
+      - light.turn_on: led
+    turn_off_action:
+      - switch.turn_off: relay
+      - light.turn_off: led
+  - platform: gpio
+    pin: GPIO14
+    id: relay
+
+sensor:
+  - <<: !include common/sensor_wifisignal.yaml
+
+  - platform: total_daily_energy
+    name: "${esp_name} - Electric Consumption [kWh]"
+    power_id: "${esp_name}_watt"
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+    unit_of_measurement: kWh
+    icon: mdi:calendar-clock
+
+  - platform: adc
+    pin: VCC
+    name: "${esp_name} - VCC Volt"
+    icon: mdi:flash-outline
+
+  - platform: hlw8012
+    sel_pin:
+      number: GPIO12
+      inverted: True
+    cf_pin: GPIO05
+    cf1_pin: GPIO04
+    change_mode_every: 4
+    current_resistor: ${current_res}
+    voltage_divider: ${voltage_div}
+    update_interval: 3s
+
+    current:
+      name: "${esp_name} - Ampere"
+      unit_of_measurement: A
+      accuracy_decimals: 3
+      icon: mdi:current-ac
+
+    voltage:
+      name: "${esp_name} - Voltage"
+      unit_of_measurement: V
+      accuracy_decimals: 1
+      icon: mdi:flash-outline
+
+    power:
+      name: "${esp_name} - Power"
+      id: "${esp_name}_watt"
+      unit_of_measurement: W
+      icon: mdi:gauge
+    energy:
+      name: "${esp_name} - Energy"
+      id: "${esp_name}_watthours"
+      unit_of_measurement: Wh
+      icon: mdi:calendar_clock
+
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
+  - <<: !include common/text_wifiinfo.yaml

@@ -18,7 +18,8 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: !secret password
+  encryption:
+    key: !secret api_key
 
 ota:
   password: !secret password
@@ -158,7 +159,7 @@ binary_sensor:
        - display.page.show: black
        - component.update: t5_display
        - delay: 3s
-       - display.page.show: main
+       - display.page.show: haupt
        - component.update: t5_display
        
       
@@ -175,19 +176,19 @@ binary_sensor:
     name: "${esp_name} Button 3"
     
   - platform: homeassistant
-    entity_id: binary_sensor.fenster_schlafzimmer
+    entity_id: binary_sensor.schlafzimmerfenster
     id: fenster_schlafzimmer
     internal: true
   - platform: homeassistant
-    entity_id: binary_sensor.fenster_kueche
+    entity_id: binary_sensor.hmip_swdo_i_00109f29a35b65_state
     id: fenster_kueche
     internal: true
   - platform: homeassistant
-    entity_id: binary_sensor.fenster_wohnzimmer
+    entity_id: binary_sensor.hmip_swdo_i_00109be98f49ee_state
     id: fenster_wohnzimer
     internal: true
   - platform: homeassistant
-    entity_id: binary_sensor.fenster_dachboden
+    entity_id: binary_sensor.hmip_swdo_i_00109be98f49ec_state
     id: fenster_dachboden
     internal: true
   - platform: homeassistant
@@ -205,22 +206,22 @@ binary_sensor:
     
 sensor:
   - platform: homeassistant
-    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_temperature
+    entity_id: sensor.hmip_sthd_000e9be998be53_actual_temperature
     id: wohnzimmer_temp
   - platform: homeassistant
     entity_id: sensor.aussentemperatur
     id: out_temp
   - platform: homeassistant
-    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_temperature
+    entity_id: sensor.schlafzimmer_temperatur_luftfeuchtesensor_actual_temperature
     id: schlafzimmer_temp
   - platform: homeassistant
-    entity_id: sensor.wtc_g_pc_tageswarmemenge_vortag_gesamt_we0
+    entity_id: sensor.wtc_g_pc_tageswarmemenge_vortag_gesamt_we0_kwh
     id: tageswaerme_vortag
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
   - platform: homeassistant
-    entity_id: sensor.temperatur_und_luftfeuchtigkeitssensor_mit_display_humidity
+    entity_id: sensor.hmip_sthd_000e9be998be53_humidity
     id: wohnzimmer_humid
   - platform: homeassistant
     entity_id: sensor.hydraulik_vorlauftemperatur_aktuell_hzk0
@@ -329,7 +330,7 @@ text_sensor:
       then:
         - script.execute: all_data_received     
 
-    
+  - <<: !include common/text_wifiinfo.yaml
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
     
@@ -349,7 +350,7 @@ script:
       - component.update: batt_volt
       - component.update: batt
       - delay: 5s
-      - display.page.show: main
+      - display.page.show: haupt
       - component.update: t5_display
       - script.execute: enter_sleep     
 
@@ -409,7 +410,7 @@ display:
           //draw filled background
           it.filled_rectangle(0, 0, xres, yres, COLOR_ON);
           it.print(xres/2, yres/2, id(font_name), COLOR_OFF, TextAlign::CENTER, "Refreshing...");
-     - id: main
+     - id: haupt
        lambda: |-
           #define xres 540 
           #define yres 960
@@ -553,8 +554,8 @@ display:
           it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "Einkaufsliste");
           it.print(x2n, y, id(font_name), TextAlign::BASELINE_LEFT, "Solar gestern");
           y+= val_pad;
-          it.printf(x1v-unit_pad/2-40, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(einkaufsliste).state);
-          it.print(x1v+unit_pad/2-40, y, id(font_name), TextAlign::BASELINE_LEFT, "Dinge");
+          it.printf(x1v-unit_pad/2-50, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.0f", id(einkaufsliste).state);
+          it.print(x1v+unit_pad/2-50, y, id(font_name), TextAlign::BASELINE_LEFT, "Dinge");
           it.printf(x2v-unit_pad/2, y, id(font_value), TextAlign::BASELINE_RIGHT, "%.3f", id(solar_yesterday).state);      
           it.print(x2v+unit_pad/2, y, id(font_name), TextAlign::BASELINE_LEFT, "kWh");
 

@@ -37,8 +37,9 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: !secret password
-
+  encryption:
+    key: !secret api_key
+    
 ota:
   password: !secret password
 
@@ -50,7 +51,7 @@ time: #!include common/time.yaml
             minutes: 30
             hours: 10
             then: 
-               - switch.turn_on: smart_scale_manual_tare_action_switch
+            #   - switch.turn_on: smart_scale_manual_tare_action_switch
              
 sun: !include common/sun.yaml 
 
@@ -169,70 +170,70 @@ sensor:
   #        - 1968137 -> 120
   #  unit_of_measurement: kg
   # RAW Scale input
-  - platform: hx711
-    id: smart_scale_hx711_value_raw
-    internal: True
-    dout_pin: '2'
-    clk_pin: '4'
-    gain: 128
-    unit_of_measurement: kg
-    accuracy_decimals: 3
-    update_interval: 2s
-    filters:
-      - sliding_window_moving_average:
-          window_size: 3
-          send_every: 1
-    on_value:
-      then:
-        - sensor.template.publish:
-            id: smart_scale_hx711_value
-            state: !lambda 'return id(smart_scale_hx711_value_raw).state;'
-        - if:
-            condition:
-              and:
-                - lambda: 'return id(auto_tare_enabled);'
-                # current smart scale value is below approx. 10KG (raw value -275743) aka nobody is standing on the scale
-                - lambda: 'return id(smart_scale_hx711_value).state < 30.0;'
-            then:
-              - if:
-                  condition:
-                    # current raw scale value is below expected zero value
-                    - lambda: 'return id(smart_scale_hx711_value_raw).state < (id(initial_zero) - id(auto_tare_difference));'
-                  then:
-                    # INcrease Auto-Tare offset to slowly align real zero value with expected zero value
-                    - lambda: |-
-                        id(auto_tare_difference) += 10;
-                  else:
-                    # DEcrease Auto-Tare offset to slowly align real zero value with expected zero value
-                    - lambda: |-
-                        id(auto_tare_difference) -= 10;
+  #- platform: hx711
+  #  id: smart_scale_hx711_value_raw
+  #  internal: True
+  #  dout_pin: '2'
+  #  clk_pin: '4'
+  #  gain: 128
+  #  unit_of_measurement: kg
+  #  accuracy_decimals: 3
+  #  update_interval: 2s
+  #  filters:
+  #    - sliding_window_moving_average:
+  #        window_size: 3
+  #        send_every: 1
+  #  on_value:
+  #    then:
+  #      - sensor.template.publish:
+  #          id: smart_scale_hx711_value
+  #          state: !lambda 'return id(smart_scale_hx711_value_raw).state;'
+  #      - if:
+  #          condition:
+  #            and:
+  #              - lambda: 'return id(auto_tare_enabled);'
+  #              # current smart scale value is below approx. 10KG (raw value -275743) aka nobody is standing on the scale
+  #              - lambda: 'return id(smart_scale_hx711_value).state < 30.0;'
+  #          then:
+  #            - if:
+  #                condition:
+  #                  # current raw scale value is below expected zero value
+  #                  - lambda: 'return id(smart_scale_hx711_value_raw).state < (id(initial_zero) - id(auto_tare_difference));'
+  #                then:
+  #                  # INcrease Auto-Tare offset to slowly align real zero value with expected zero value
+  #                  - lambda: |-
+  #                      id(auto_tare_difference) += 10;
+  #                else:
+  #                  # DEcrease Auto-Tare offset to slowly align real zero value with expected zero value
+  #                  - lambda: |-
+  #                      id(auto_tare_difference) -= 10;
     
   # Mapped value to KG
-  - platform: template
-    id: smart_scale_hx711_value
-    name: "Smart Scale HX711 Value"
-    internal: False
-    filters:
-      # apply auto_tare difference
-      - lambda: 'return x + id(auto_tare_difference);'
-      # apply rough calibration
-      - calibrate_linear:
-          # retrieve these values by evaluating the raw values with loads of known mass.
-          # note that a bigger difference between measurements usually results in higher resolution,
-          # so measure 0 Kg and the highest known mass you have (like f.ex. your own weight, measured by a normal scale with good accuracy)
-          - 970928 -> 0
-          - 1968137 -> 120
-      # map values below 0.1 to 0 (to decrease value changes due to random fluctuation)
-      - lambda: |-
-          if (x <= 0.5) {
-            return 0.0;
-          } else {
-            return x;
-          }
-          
-    unit_of_measurement: kg
-    accuracy_decimals: 2
-    update_interval: 2s
+  #- platform: template
+  #  id: smart_scale_hx711_value
+  #  name: "Smart Scale HX711 Value"
+  #  internal: False
+  #  filters:
+  #    # apply auto_tare difference
+  #    - lambda: 'return x + id(auto_tare_difference);'
+  #    # apply rough calibration
+  #    - calibrate_linear:
+  #        # retrieve these values by evaluating the raw values with loads of known mass.
+  #        # note that a bigger difference between measurements usually results in higher resolution,
+  #        # so measure 0 Kg and the highest known mass you have (like f.ex. your own weight, measured by a normal scale with good accuracy)
+  #        - 970928 -> 0
+  #        - 1968137 -> 120
+  #    # map values below 0.1 to 0 (to decrease value changes due to random fluctuation)
+  #    - lambda: |-
+  #        if (x <= 0.5) {
+  #          return 0.0;
+  #        } else {
+  #          return x;
+  #        }
+  #        
+  #  unit_of_measurement: kg
+  #  accuracy_decimals: 2
+  #  update_interval: 2s
     
     
   - platform: pmsx003
@@ -284,34 +285,36 @@ switch:
     - switch.turn_on: PMSX
     pin:
       number: 0
+  - platform: restart
+    name: "CO2 Reboot"
       
       
   ## Switch to enable/disable the auto tare feature
-  - platform: template
-    id: smart_scale_continuous_tare_enabled
-    name: "Smart Scale Continuous Tare Enabled"
-    lambda: |-
-      return id(auto_tare_enabled);
-    turn_on_action:
-      - lambda: |-
-          id(auto_tare_enabled) = true;
-    turn_off_action:
-      - lambda: |-
-          id(auto_tare_enabled) = false;
+  #- platform: template
+  #  id: smart_scale_continuous_tare_enabled
+  #  name: "Smart Scale Continuous Tare Enabled"
+  #  lambda: |-
+  #    return id(auto_tare_enabled);
+  #  turn_on_action:
+  #    - lambda: |-
+  #        id(auto_tare_enabled) = true;
+  #  turn_off_action:
+  #    - lambda: |-
+  #        id(auto_tare_enabled) = false;
   
   ## Switch used to initiate a manual tare
-  - platform: template
-    id: smart_scale_manual_tare_action_switch
-    name: "Smart Scale Manual Tare Action"
-    lambda: |-
-      return id(manual_tare_flag);
-    turn_on_action:
-      - lambda: |-
-          id(auto_tare_difference) = id(initial_zero) - id(smart_scale_hx711_value_raw).state;
-      - switch.turn_off: smart_scale_manual_tare_action_switch
-    turn_off_action:
-      - lambda: |-
-          id(manual_tare_flag) = false;
+  #- platform: template
+  #  id: smart_scale_manual_tare_action_switch
+  #  name: "Smart Scale Manual Tare Action"
+  #  lambda: |-
+  #    return id(manual_tare_flag);
+  #  turn_on_action:
+  #    - lambda: |-
+  #        id(auto_tare_difference) = id(initial_zero) - id(smart_scale_hx711_value_raw).state;
+  #    - switch.turn_off: smart_scale_manual_tare_action_switch
+  #  turn_off_action:
+  #    - lambda: |-
+  #        id(manual_tare_flag) = false;
   ## Ende neu
      
      
@@ -350,6 +353,8 @@ graph:
     x_grid: 30min
     y_grid: 5.0
     
+bluetooth_proxy:
+  active: true
     
 display:
   - platform: ssd1306_i2c

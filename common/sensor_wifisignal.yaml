@@ -1,5 +1,9 @@
   - platform: wifi_signal
-    name: "WiFi Signal Sensor ${esp_hostname}"
+    name: "${esp_hostname} - Wi-Fi Signal"
     update_interval: 60s
     id: wifisignal
     internal: false
+  - platform: uptime
+    name: "${esp_hostname} - Uptime"
+    update_interval: 60s
+    icon: mdi:clock-outline
