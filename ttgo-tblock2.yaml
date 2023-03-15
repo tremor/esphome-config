@@ -1,8 +1,8 @@
 substitutions:
-  esp_name: ESP T-Block Display #Device Name
-  esp_hostname: ttgo-tblock1
-  run_time: 1min #can be as long as needed to get data 
-  sleep_time: 5min # normal sleep time
+  esp_name: ESP T-Block Display 2 #Device Name
+  esp_hostname: ttgo-tblock2
+  run_time: 3600min #can be as long as needed to get data 
+  sleep_time: 1min # normal sleep time
   away_sleep_time: 1h # sleep time when nobody's at home
   night_sleep_time: 6h # 1st sleep time after midnight
 
@@ -10,8 +10,6 @@ esphome:
   name: ${esp_hostname}
   platform: esp32
   board: ttgo-t-watch
-  libraries: ciniml/WireGuard-ESP32
-  includes: wg-settings-nous-power-1.h
 
 # Enable logging
 logger:
@@ -25,45 +23,8 @@ ota:
   password: !secret password
 
 wifi:
-  networks:
-  - ssid: !secret wifi_ssid_hotspot
-    password: !secret wifi_hotspot_password
-  - ssid: "eduroam"
-    eap:
-      username: !secret eduroam_user
-      password: !secret eduroam_password
-  use_address: 10.0.50.200
-      
-interval:
-  - interval: 60s
-    then:
-      if:
-        condition:
-          api.connected:
-        then:
-         - logger.log: API is connected! No need for Wireguard!
-        else:
-         - lambda: |
-             static const char* TAG = "wireguard";
-             ESP_LOGD(TAG, "Starting via interval...");
-             if( !wg.is_initialized() ) {
-                        ESP_LOGD(TAG, "Initializing WG interface...");
-                        if( !wg.begin(
-                                local_ip,
-                                private_key,
-                                endpoint_address,
-                                public_key,
-                                endpoint_port) ) {
-                            ESP_LOGD(TAG, "Failed to initialize WG interface.");
-                        }
-                    }
-
-
-
-
-#wifi:
-#  ssid: !secret wifi_ssid
-#  password: !secret wifi_password
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 #  use_address: 10.11.30.117
   
   # Enable fallback hotspot (captive portal) in case wifi connection fails
@@ -92,7 +53,15 @@ deep_sleep:
 text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
-  
+  - platform: homeassistant
+    entity_id: sensor.flsunq5_time_remaining
+    id: flsunq5_remaining
+    internal: true
+  - platform: homeassistant
+    entity_id: sensor.ender5_time_remaining
+    id: ender5_remaining
+    internal: true
+      
 binary_sensor:
   - platform: gpio
     pin: 
@@ -102,9 +71,9 @@ binary_sensor:
     on_press:
       then:
          - display.page.show: page1
-         - delay: 5s
+         - delay: 60s
          - display.page.show: page2
-         - delay: 5s
+         - delay: 60s
          - deep_sleep.enter:
               id: deep_sleep_1
               sleep_duration: 1min
@@ -115,7 +84,7 @@ sensor:
     on_value:
         then:
          - display.page.show: page1
-         - delay: 5s
+         - delay: 60s
          - display.page.show: page2
   - platform: homeassistant
     entity_id: sensor.gartenhaus_solar_energy_today
@@ -125,7 +94,7 @@ sensor:
     entity_id: sensor.gartenhaus_solar_energy_power
     id: solar_now
     internal: true
-  
+
 font: !include common/fonts.yaml
 
 display:
@@ -138,13 +107,22 @@ display:
     rotation: 0
     id: epaper_display
     full_update_every: 1
-    update_interval: 60s
+    update_interval: 120s
     pages:
       - id: page1
         lambda: |-
           #define xres 200
           #define yres 200
           it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+          it.printf(0, 0, id(sans_medium), "FLSunQ5");
+          if (id(flsunq5_remaining).has_state()) {
+              it.printf(0, 50, id(sans_medium),  "%s", id(flsunq5_remaining).state.c_str());
+          }
+          it.printf(0, 100, id(sans_medium), "Ender 5");
+          if (id(ender5_remaining).has_state()) {
+              it.printf(0, 150, id(sans_medium),  "%s", id(ender5_remaining).state.c_str());
+          }
+
       - id: page2
         lambda: |-
           #define xres 200

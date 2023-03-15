@@ -1,6 +1,6 @@
 substitutions:
   esp_name: ESP Display #Device Name
-  esp_hostname: tilygo-t5-1
+  esp_hostname: lilygo-t5-1
   run_time: 5min #can be as long as needed to get data 
   sleep_time: 15min # normal sleep time
   away_sleep_time: 1h # sleep time when nobody's at home
@@ -203,7 +203,11 @@ binary_sensor:
     entity_id: binary_sensor.lumi_lumi_sensor_magnet_aq2_ad030b07_on_off
     id: garage_tor
     internal: true
-    
+  - platform: homeassistant
+    entity_id: input_boolean.briefkastenstatus
+    id: briefkasten
+    internal: true
+
 sensor:
   - platform: homeassistant
     entity_id: sensor.hmip_sthd_000e9be998be53_actual_temperature
@@ -561,7 +565,7 @@ display:
 
           //Fensterstatus
           y+= val_pad;  
-          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "SZ  KU  WZ  DA  WG  DU  GA");
+          it.print(x1n, y, id(font_name), TextAlign::BASELINE_LEFT, "SZ  KU  WZ  DA  WG  DU  BR");
           // it.print(x2n, y+10, id(font_icons_small), TextAlign::BASELINE_LEFT, "\U000F024A"); //CO2
           y+= val_pad;      
           
@@ -589,9 +593,9 @@ display:
           it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081C");}
           if (id(tuer_durchgang).state == 0) {
           it.printf(xsym6, y, id(font_icons_small), TextAlign::CENTER, "\U000F081B");}
-          if (id(garage_tor).state == 1) {
+          if (id(briefkasten).state == 1) {
           it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F06DA");}
-          if (id(garage_tor).state == 0) {
+          if (id(briefkasten).state == 0) {
           it.printf(xsym7, y, id(font_icons_small), TextAlign::CENTER, "\U000F06D9");}
 
       

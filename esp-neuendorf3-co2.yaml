@@ -1,8 +1,8 @@
 substitutions:
-  esp_name: Ferraris_1 #Device Name
-  esp_hostname: ferraris-1
-  run_time: 10h #can be as long as needed to get data 
-  sleep_time: 5min # normal sleep time
+  esp_name: esp-neuendorf3-co2 #Device Name
+  esp_hostname: esp-neuendorf3-co2
+  run_time: 24h #can be as long as needed to get data 
+  sleep_time: 10sec # normal sleep time
   
 esphome:
   name: ${esp_hostname}
@@ -10,14 +10,16 @@ esphome:
   board: wemos_d1_mini32
   
 wifi:
+  #ssid: !secret wifi_ssid_neuendorf
+  #password: !secret wifi_password_neuendorf
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  #use_address: 10.11.30.111
+  use_address: 10.11.30.123
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "${esp_hostname}"
-    password: !secret password
+  #ap:
+  #  ssid: "${esp_hostname}"
+  #  password: !secret password
 
 captive_portal:
 
@@ -39,25 +41,26 @@ sun: !include common/sun.yaml
 mqtt: !include common/mqtt.yaml
 
 deep_sleep:
+  run_duration: ${run_time}
   sleep_duration: ${sleep_time}
   id: deep_sleep_1
+
+i2c:
+  sda: 21
+  scl: 22
+  scan: true
+  id: bus_a
   
 text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
-  - <<: !include common/text_wifiinfo.yaml
-  
+
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
-  - platform: pulse_counter
-    pin: GPIO18
-    unit_of_measurement: 'kW'
-    name: 'Power Meter House'
-    filters:
-      - multiply: 0.06
-    id: house_power
-
-  - platform: total_daily_energy
-    name: "Total Daily Energy"
-    power_id: house_power
-    accuracy_decimals: 1
+  - platform: sht3xd
+    temperature:
+      name: "Living Room Temperature"
+    humidity:
+      name: "Living Room Humidity"
+    address: 0x44
+    update_interval: 60s

@@ -1,0 +1,100 @@
+substitutions:
+  esp_name: esp-neuendorf2-ir-counter #Device Name
+  esp_hostname: esp-neuendorf2-ir-counter
+  run_time: 24h #can be as long as needed to get data 
+  sleep_time: 10sec # normal sleep time
+  
+esphome:
+  name: ${esp_hostname}
+  platform: ESP32
+  board: wemos_d1_mini32
+  
+wifi:
+  ssid: !secret wifi_ssid_neuendorf
+  password: !secret wifi_password_neuendorf
+  #ssid: !secret wifi_ssid
+  #password: !secret wifi_password
+  #use_address: 10.11.30.111
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "${esp_hostname}"
+    password: !secret password
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  password: !secret password
+
+time: !include common/time.yaml
+
+sun: !include common/sun.yaml 
+
+#mqtt: !include common/mqtt.yaml
+
+deep_sleep:
+  run_duration: ${run_time}
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+
+#i2c:
+#  sda: 21
+#  scl: 22
+#  scan: true
+  
+text_sensor:
+  - <<: !include common/text_sensor_sunrise.yaml
+  - <<: !include common/text_sensor_sunset.yaml
+
+sensor:
+  - <<: !include common/sensor_wifisignal.yaml
+  # The Pulse-Sensor is initiated and used indecritly via Copy-Platform (There is no other way if you want 2 Value Pairs from one Sensor/Pin)
+  # Source: https://github.com/esphome/issues/issues/3364#issuecomment-1153246628
+  # Begin Pulse Meter Sensor
+  - platform: pulse_counter
+    pin: 
+      number: GPIO4
+      mode: INPUT_PULLUP
+      # Falls du Probleme hast mit nicht korrekt gezählten Impulsen, kannst du abgesehen von einer sauberen Platzierung der Diode versuchen, die Zeile hier oben drüber einzukommentieren, indem du die Raute davor entfernst.
+    id: powermeter_pulse
+    # Bei 50 ms wurden scheinbar zu wenige Pulse gezählt. Offset nach 3 Stunden war z.B. 1ne kWh
+    # Geändert auf 15ms von 20ms am 15.12.2022 um 22:09 Uhr, da noch 0,5 kWh gefehlt haben
+    # 17.12.2022 13:01 Uhr: Geändert auf 20ms, da bei 15ms insgesamt 15 kWh in 36 Stunden zu viel gezählt wurden.
+    # 18.12.2022 22:53 Uhr: Gändert auf 25ms von 20ms, da in 24H insgesamt 1ne kWh zu viel gezählt wurde
+    # Nach einem erneuten einstellen des Poti am Board und einer verschiebung des TCRT5000 um 1 mm nach oben brachten 100ms ein exaktes Ergebnis.
+    #internal_filter: 100ms
+    update_interval: 1s
+    count_mode: 
+      falling_edge: INCREMENT
+      rising_edge: DISABLE
+    total:
+      id: powermeter_total
+  - platform: copy
+    source_id: powermeter_pulse
+    unit_of_measurement: 'kW'
+    name: 'Aktuelle Leistung'
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.8  # (60s/75 pulses per kWh)
+  - platform: copy
+    source_id: powermeter_total
+    unit_of_measurement: 'kWh'
+    name: 'Stromzähler Total'
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.01333333 # (1/75 pulses per kWh)
+  # Used for Testing and Validation Purposes
+  - platform: copy
+    source_id: powermeter_pulse
+    name: "Pulse-Counter Raw"
+  - platform: copy
+    source_id: powermeter_total
+    name: "Pulse-Counter Total Raw"
