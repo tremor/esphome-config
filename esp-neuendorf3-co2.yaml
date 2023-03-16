@@ -6,9 +6,9 @@ substitutions:
   
 esphome:
   name: ${esp_hostname}
-  platform: ESP32
-  board: wemos_d1_mini32
-  
+  platform: ESP8266
+  board: d1_mini
+
 wifi:
   #ssid: !secret wifi_ssid_neuendorf
   #password: !secret wifi_password_neuendorf
@@ -46,8 +46,8 @@ deep_sleep:
   id: deep_sleep_1
 
 i2c:
-  sda: 21
-  scl: 22
+  sda: GPIO4
+  scl: GPIO5
   scan: true
   id: bus_a
   
@@ -55,12 +55,26 @@ text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
 
+uart:   
+  - id: co2
+    rx_pin: GPIO3
+    tx_pin: GPIO1
+    baud_rate: 9600
+  
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
+  - platform: mhz19
+    uart_id: co2
+    co2:
+      name: ${esp_hostname} CO2 Value
+    temperature:
+      name: ${esp_hostname} Temperature
+    update_interval: 60s
+    automatic_baseline_calibration: false
   - platform: sht3xd
     temperature:
-      name: "Living Room Temperature"
+      name: ${esp_hostname} Temperature
     humidity:
-      name: "Living Room Humidity"
+      name: ${esp_hostname} Humidity
     address: 0x44
     update_interval: 60s
