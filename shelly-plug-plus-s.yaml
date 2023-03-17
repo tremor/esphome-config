@@ -119,6 +119,25 @@ switch:
     name: "${esp_name} Relay"
     output: "relay_output"
 
+light:
+   - platform: neopixelbus
+     variant: 800KBPS
+     method:
+        type: esp32_rmt
+        channel: 0
+     pin: GPIO25
+     num_leds: 2
+     id: rgb_light1
+  
+   - platform: neopixelbus
+     variant: 800KBPS
+     method:
+        type: esp32_rmt
+        channel: 1
+     pin: GPIO26
+     num_leds: 2
+     id: rgb_light2
+     
 sensor:
   - platform: hlw8012
     model: BL0937
