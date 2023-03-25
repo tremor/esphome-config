@@ -38,8 +38,8 @@ wifi:
       certificate_authority: ca_cert.pem
   - ssid: !secret wifi_ssid
     password: !secret wifi_password
-  #use_address: 10.11.30.111
-  use_address: 10.0.50.20
+  use_address: 139.30.231.22
+  #use_address: 10.0.50.20
   
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -87,15 +87,6 @@ binary_sensor:
       - delayed_on_off: 5ms
 
 output:
-#  - platform: gpio
-#    pin: GPIO13
-#    id: led_g
-#  - platform: gpio
-#    pin: GPIO14
-#    id: led_r
-#  - platform: gpio
-#    pin: GPIO16
-#    id: led_b
   - platform: gpio
     id: "relay_output"
     pin: GPIO4
@@ -119,24 +110,24 @@ switch:
     name: "${esp_name} Relay"
     output: "relay_output"
 
-light:
-   - platform: neopixelbus
-     variant: 800KBPS
-     method:
-        type: esp32_rmt
-        channel: 0
-     pin: GPIO25
-     num_leds: 2
-     id: rgb_light1
+#light:
+#   - platform: neopixelbus
+#     variant: 800KBPS
+#     method:
+#        type: esp32_rmt
+#        channel: 0
+#     pin: GPIO25
+#     num_leds: 2
+#     id: rgb_light1
   
-   - platform: neopixelbus
-     variant: 800KBPS
-     method:
-        type: esp32_rmt
-        channel: 1
-     pin: GPIO26
-     num_leds: 2
-     id: rgb_light2
+#   - platform: neopixelbus
+#     variant: 800KBPS
+#     method:
+#        type: esp32_rmt
+#        channel: 1
+#     pin: GPIO26
+#     num_leds: 2
+#     id: rgb_light2
      
 sensor:
   - platform: hlw8012

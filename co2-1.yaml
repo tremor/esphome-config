@@ -131,6 +131,8 @@ uart:
     baud_rate: 9600
   
 sensor:
+  - platform: internal_temperature
+    name: "Internal Temperature"
   - platform: mhz19
     uart_id: co2
     co2:

@@ -5,13 +5,14 @@ substitutions:
 esphome:
   name: ${esp_hostname}
   platform: ESP32
-  board: wemos_d1_mini32
+  board: lolin32
+  #board: wemos_d1_mini32
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   use_address: 10.11.30.112 #iot.schmidtie.net
-  #use_address: 10.11.30.159 
+ 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "${esp_hostname}"
@@ -25,7 +26,8 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: !secret password
+  encryption:
+    key: !secret api_key
 
 ota:
   password: !secret password
@@ -48,12 +50,12 @@ time:
         then:
         - lambda: |-
             id(deep_sleep_1).set_sleep_duration(60*60000);
-            id(deep_sleep_1).setup();
+        #id(deep_sleep_1).setup();
       - hours: 6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
         then:
         - lambda: |-
             id(deep_sleep_1).set_sleep_duration(10*60000);
-            id(deep_sleep_1).setup();
+        #id(deep_sleep_1).setup();
 
 deep_sleep:
   run_duration: 60s

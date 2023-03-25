@@ -19,12 +19,12 @@ esphome:
   board: nodemcu-32s
   on_boot:
     then:
-    - switch.turn_off: background
+    - output.turn_off: gpio_4_backlight_pwm
     - wait_until:
        api.connected:
     - lambda: |-
          ESP_LOGD("main", "Global value markerpoint is: %d", id(markerpoint));
-    - switch.turn_on: background
+    - output.turn_on: gpio_4_backlight_pwm
 
 wifi:
   ssid: !secret wifi_ssid
@@ -81,7 +81,7 @@ interval:
         condition:
           lambda: 'return id(countdown) < 1;'
         then:
-          - switch.turn_off: background
+          - output.turn_off: gpio_4_backlight_pwm
         else:
           - lambda: 'id(countdown) -= 1;'
 
@@ -173,7 +173,7 @@ sensor:
               id(countdown) = 10;
               id(markerpoint) += 1;
         - script.execute: check_markerpoint_above
-        - switch.turn_on: background
+        - output.turn_on: gpio_4_backlight_pwm
         - display.page.show: wohnzimmer
 
     on_anticlockwise:
@@ -183,7 +183,7 @@ sensor:
               id(countdown) = 10;
               id(markerpoint) -= 1;
         - script.execute: check_markerpoint_below
-        - switch.turn_on: background
+        - output.turn_on: gpio_4_backlight_pwm
         - display.page.show: wohnzimmer
     filters:
        debounce: 30ms
@@ -200,7 +200,7 @@ binary_sensor:
               id(countdown) = 10;
               id(markerpoint) += 1;
         - script.execute: check_markerpoint_above
-        - switch.turn_on: background
+        - output.turn_on: gpio_4_backlight_pwm
         - display.page.show: wohnzimmer
         - logger.log:       
             format: "Button Down %d"
@@ -217,7 +217,7 @@ binary_sensor:
               id(countdown) = 10;
               id(markerpoint) -= 1;
         - script.execute: check_markerpoint_below
-        - switch.turn_on: background
+        - output.turn_on: gpio_4_backlight_pwm
         - display.page.show: wohnzimmer
         - logger.log:       
             format: "Button Up %d"
@@ -232,7 +232,7 @@ binary_sensor:
         - lambda: |-
              id(countdown) = 10;
         - script.execute: button_toggle
-        - switch.turn_on: background
+        - output.turn_on: gpio_4_backlight_pwm
         - display.page.show: wohnzimmer
   - platform: gpio
     name: "Rotary Enter"
@@ -244,7 +244,7 @@ binary_sensor:
         - lambda: |-
              id(countdown) = 10;
         - script.execute: button_toggle
-        - switch.turn_on: background
+        - output.turn_on: gpio_4_backlight_pwm
         - display.page.show: wohnzimmer
 
   - platform: homeassistant
@@ -314,9 +314,6 @@ binary_sensor:
     
 
 switch:
-  - platform: gpio
-    pin: 4
-    id: background
   - platform: template
     internal: true
     id: switch_ha
@@ -353,13 +350,26 @@ spi:
   miso_pin: 12
   mosi_pin: 23
 
+# Define a PWM output on the ESP32
+output:
+  - platform: ledc
+    pin: 4
+    id: gpio_4_backlight_pwm
+
+# Define a monochromatic, dimmable light for the backlight
+light:
+  - platform: monochromatic
+    output: gpio_4_backlight_pwm
+    name: "Display Backlight"
+    id: back_light
+    restore_mode: ALWAYS_ON
 
 display:
-  - platform: ili9341
+  - platform: ili9xxx
     model: TFT_2.4
     cs_pin: 27
     dc_pin: 32
-    led_pin: 4
+    #led_pin: 4
     reset_pin: 5
     rotation: 180
     id: my_display

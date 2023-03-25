@@ -11,7 +11,7 @@ esphome:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  use_address: 10.11.30.50
+  use_address: 10.11.30.116
   
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -25,7 +25,8 @@ logger:
 
 # Enable Home Assistant API
 api:
-  password: !secret password
+  encryption:
+    key: !secret api_key
 
 ota:
   password: !secret password
@@ -48,8 +49,8 @@ text_sensor:
     entity_id: sensor.flsunq5_time_remaining
     id: flsunq5_time_remaining
   - platform: homeassistant
-    entity_id: sensor.ender3pro_time_remaining
-    id: ender3pro_time_remaining
+    entity_id: sensor.ender5_time_remaining
+    id: ender5_time_remaining
 
 font: !include common/fonts.yaml
 
@@ -75,8 +76,8 @@ sensor:
     #    then:
     #    - display.page.show: page3
   - platform: homeassistant
-    entity_id: sensor.ender3pro_hotend_actual
-    id: ender3pro_hotend_actual
+    entity_id: sensor.ender5_hotend_actual
+    id: ender5_hotend_actual
     on_value_range:
       - above: 50
         then:
@@ -85,8 +86,8 @@ sensor:
         then:
         - display.page.show: page1
   - platform: homeassistant
-    entity_id:  sensor.ender3pro_current_progress
-    id: ender3pro_current_progress
+    entity_id:  sensor.ender5_current_progress
+    id: ender5_current_progress
   - platform: homeassistant
     entity_id: sensor.flsunq5_hotend_actual
     id: flsunq5_hotend_actual
@@ -110,8 +111,8 @@ sensor:
     entity_id: sensor.flsunq5_bed_actual
     id: flsunq5_bed_actual
   - platform: homeassistant
-    entity_id: sensor.ender3pro_bed_actual
-    id: ender3pro_bed_actual
+    entity_id: sensor.ender5_bed_actual
+    id: ender5_bed_actual
   - platform: homeassistant
     entity_id: sensor.lumi_lumi_sens_temperature
     id: petg_aktive_box_temperature
@@ -150,11 +151,11 @@ display:
           it.printf(128, 0, id(sans_medium_15), TextAlign::TOP_RIGHT, "R2:%.0fg", id(filamentrolle_rechts).state);
           it.printf(0, 15, id(sans_medium_15), TextAlign::TOP_LEFT, "aktiv:%.0f%%", id(petg_aktive_box_temperature).state);
           it.printf(0, 30, id(sans_medium_15), TextAlign::TOP_LEFT, "pass.: %.0f%%", id(petg_passive_box_humidity).state);
-          it.printf(0, 45, id(sans_medium_15), TextAlign::TOP_LEFT, "E3P:%.0f°C, Q5:%.0f°C", id(ender3pro_bed_actual).state, id(flsunq5_bed_actual).state);
+          it.printf(0, 45, id(sans_medium_15), TextAlign::TOP_LEFT, "E5:%.0f°C, Q5:%.0f°C", id(ender5_bed_actual).state, id(flsunq5_bed_actual).state);
       - id: page2
         lambda: |-
-          it.printf(0, 0, id(sans_medium_10), "E3: %.0f%%, H: %.0f°C, B:%.0f°C", id(ender3pro_current_progress).state, id(ender3pro_hotend_actual).state, id(ender3pro_bed_actual).state);
-          it.printf(0, 15, id(sans_medium_10), "Zeit: %s, R1: %.0f%g", id(ender3pro_time_remaining).state.c_str(),id(filamentrolle_links).state);
+          it.printf(0, 0, id(sans_medium_10), "E5: %.0f%%, H: %.0f°C, B:%.0f°C", id(ender5_current_progress).state, id(ender5_hotend_actual).state, id(ender5_bed_actual).state);
+          it.printf(0, 15, id(sans_medium_10), "Zeit: %s, R1: %.0f%g", id(ender5_time_remaining).state.c_str(),id(filamentrolle_links).state);
           it.printf(0, 30, id(sans_medium_10), "Q5: %.0f%%, H: %.0f°C, B: %.0f°C", id(flsunq5_current_progress).state, id(flsunq5_hotend_actual).state, id(flsunq5_bed_actual).state);
           it.printf(0, 45, id(sans_medium_10), "Zeit: %s, R2: %.0f%%", id(flsunq5_time_remaining).state.c_str(), id(filamentrolle_rechts).state);
           it.printf(0, 60, id(sans_medium_10), "A-Box: %.0f%%, Lagerbox: %.0f%%", id(sensor_aktive_box).state, id(sensor_lagerbox).state);

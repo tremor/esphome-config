@@ -71,6 +71,8 @@ text_sensor:
 
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
+  - platform: internal_temperature
+    name: "Internal Temperature"
   - platform: uptime
     name: "${esp_name} Uptime Sensor"
     id: uptime_sensor
