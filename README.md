@@ -2,7 +2,6 @@
 
 This is my personal repo with all my ESPHome Device configurations. Feel free to copy the configuration. The Devices in particular:
 
-<<<<<<< HEAD
 bodenfeuchte1.yaml: wemos_d1_mini32, up to 4 Capacitive Soil Moisture Senors on GPIO[32-35], solar powered, sleeps during the night for 60 minutes, during daytime for 10 minutes
 
 co2-1.yaml: wt32-eth01 Board, MH-Z19B CO2 Sensor, PMSX Air Particle Sensor, ssd1306 OLED Display, prepared for HX711 Load Cell
