@@ -4,16 +4,18 @@ substitutions:
   run_time: 24h #can be as long as needed to get data 
   sleep_time: 10sec # normal sleep time
   
+esp8266:
+  board: d1_mini
+
 esphome:
-  name: ${esp_hostname}
-  platform: ESP32
-  board: wemos_d1_mini32
+  name: "${esp_hostname}"
   
 wifi:
-  ssid: !secret wifi_ssid_neuendorf
-  password: !secret wifi_password_neuendorf
-  #ssid: !secret wifi_ssid
-  #password: !secret wifi_password
+  networks:
+   - ssid: !secret wifi_ssid_neuendorf
+     password: !secret wifi_password_neuendorf
+   - ssid: !secret wifi_ssid
+     password: !secret wifi_password
   #use_address: 10.11.30.111
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
@@ -56,13 +58,14 @@ text_sensor:
 
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
+
   # The Pulse-Sensor is initiated and used indecritly via Copy-Platform (There is no other way if you want 2 Value Pairs from one Sensor/Pin)
   # Source: https://github.com/esphome/issues/issues/3364#issuecomment-1153246628
   # Begin Pulse Meter Sensor
   - platform: pulse_counter
     pin: 
-      number: GPIO4
-      mode: INPUT_PULLUP
+      number: D5
+      # mode: INPUT_PULLUP
       # Falls du Probleme hast mit nicht korrekt gezählten Impulsen, kannst du abgesehen von einer sauberen Platzierung der Diode versuchen, die Zeile hier oben drüber einzukommentieren, indem du die Raute davor entfernst.
     id: powermeter_pulse
     # Bei 50 ms wurden scheinbar zu wenige Pulse gezählt. Offset nach 3 Stunden war z.B. 1ne kWh
@@ -70,13 +73,19 @@ sensor:
     # 17.12.2022 13:01 Uhr: Geändert auf 20ms, da bei 15ms insgesamt 15 kWh in 36 Stunden zu viel gezählt wurden.
     # 18.12.2022 22:53 Uhr: Gändert auf 25ms von 20ms, da in 24H insgesamt 1ne kWh zu viel gezählt wurde
     # Nach einem erneuten einstellen des Poti am Board und einer verschiebung des TCRT5000 um 1 mm nach oben brachten 100ms ein exaktes Ergebnis.
-    #internal_filter: 100ms
+    internal_filter: 100ms
     update_interval: 1s
     count_mode: 
       falling_edge: INCREMENT
       rising_edge: DISABLE
     total:
       id: powermeter_total
+  - platform: adc
+    pin: A0
+    name: "Analog Voltage Signal"
+    accuracy_decimals: 4
+    update_interval: 120s
+  # Used for Energy Measuring
   - platform: copy
     source_id: powermeter_pulse
     unit_of_measurement: 'kW'

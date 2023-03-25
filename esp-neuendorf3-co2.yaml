@@ -10,7 +10,6 @@ esphome:
   board: d1_mini
 
 wifi:
-
   networks:
    - ssid: !secret wifi_ssid_neuendorf
      password: !secret wifi_password_neuendorf
