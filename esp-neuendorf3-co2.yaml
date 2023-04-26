@@ -1,7 +1,7 @@
 substitutions:
   esp_name: esp-neuendorf3-co2 #Device Name
   esp_hostname: esp-neuendorf3-co2
-  run_time: 24h #can be as long as needed to get data 
+  run_time: 99999h #can be as long as needed to get data 
   sleep_time: 10sec # normal sleep time
   
 esphome:
@@ -51,7 +51,10 @@ i2c:
   scl: GPIO5
   scan: true
   id: bus_a
-  
+
+dallas:
+  - pin: GPIO16
+
 text_sensor:
   - <<: !include common/text_sensor_sunrise.yaml
   - <<: !include common/text_sensor_sunset.yaml
@@ -64,6 +67,18 @@ uart:
   
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
+  - platform: dallas
+    address: 0x2b0000000c4f0828
+    name: "Sensor1"
+  - platform: dallas
+    address: 0xea0000000d01ab28
+    name: "Sensor2"
+  - platform: dallas
+    address: 0x5b0000000d5a4728
+    name: "Sensor3"
+  - platform: dallas
+    address: 0x410000000d649c28
+    name: "Sensor4"
   - platform: mhz19
     uart_id: co2
     co2:

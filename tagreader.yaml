@@ -69,15 +69,6 @@ text_sensor:
   - <<: !include common/text_sensor_sunset.yaml
   - <<: !include common/text_wifiinfo.yaml
 
-sensor:
-  - <<: !include common/sensor_wifisignal.yaml
-  - platform: internal_temperature
-    name: "Internal Temperature"
-  - platform: uptime
-    name: "${esp_name} Uptime Sensor"
-    id: uptime_sensor
-    update_interval: 10s
-    
 # Define switches to control LED and buzzer from HA
 switch:
 - platform: template
@@ -121,3 +112,54 @@ light:
   id: activity_led
   name: "${friendly_name} LED"
   restore_mode: ALWAYS_OFF
+
+sensor:
+  - <<: !include common/sensor_wifisignal.yaml
+  - platform: internal_temperature
+    name: "Internal Temperature"
+  - platform: uptime
+    name: "${esp_name} Uptime Sensor"
+    id: uptime_sensor
+    update_interval: 10s
+  - platform: pvvx_mithermometer
+    mac_address: "A4:C1:38:FB:9A:8C"
+    temperature:
+      name: "Insulintasche Temperature"
+    humidity:
+      name: "Insulintasche Humidity"
+    battery_level:
+      name: "Insulintasche Battery-Level"
+    battery_voltage:
+      name: "Insulintasche Battery-Voltage"
+    signal_strength:
+      name: "Insulintasche Signal"
+  - platform: homeassistant
+    entity_id: sensor.blood_sugar_mmol
+    id: blood_sugar_mmol
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_power
+    id: solar_now
+    internal: true
+
+ble_client:
+- mac_address: "A4:C1:38:FB:9A:8C"
+  id: pvvx_ble_display
+
+display:
+- platform: pvvx_mithermometer
+  update_interval: 10min
+  validity_period: 15min
+  time_id: ntp
+  ble_client_id: pvvx_ble_display
+  lambda: |-
+    double sugar = id(blood_sugar_mmol).state;
+    double solar = id(solar_now).state;
+    it.print_bignum(sugar);
+    it.print_unit(pvvx_mithermometer::UNIT_DEG_C);
+    it.print_smallnum(solar);
+    it.print_percent();
+    if (sugar < 4 || sugar > 8) {
+      it.print_sad();
+    } else {
+      it.print_happy();
+    }

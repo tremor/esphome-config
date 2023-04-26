@@ -112,6 +112,12 @@ script:
              
 sensor:
   - <<: !include common/sensor_wifisignal.yaml
+  - platform: internal_temperature
+    name: "Internal Temperature"
+  - platform: uptime
+    name: "${esp_name} Uptime Sensor"
+    id: uptime_sensor
+    update_interval: 10s
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
@@ -132,7 +138,6 @@ sensor:
     entity_id: sensor.mh_z19_co2_value
     id: schlafzimmer_co2
     internal: true
-    
   - platform: homeassistant
     entity_id: sensor.hmip_sthd_000e9be998be53_humidity
     id: wohnzimmer_humid
@@ -145,9 +150,6 @@ sensor:
     entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_illuminance
     id: wohnzimmer_illumination
     internal: true
-
-
-    
   - platform: homeassistant
     entity_id: sensor.tempf_lacrosse204_temperature
     id: dachboden_temp
@@ -160,7 +162,11 @@ sensor:
     entity_id: sensor.xiaomi_lumi_sen_ill_mgl01_3d351a00_illuminance
     id: dachboden_illumination
     internal: true
-    
+  - platform: homeassistant
+    entity_id: sensor.gartenhaus_solar_energy_power
+    id: solar_now
+    internal: true
+
   - platform: rotary_encoder
     name: "Rotary Encoder"
     id: rotator

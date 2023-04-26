@@ -1,17 +1,15 @@
 substitutions:
   esp_name: ESP T-Block Display #Device Name
   esp_hostname: ttgo-tblock1
-  run_time: 1min #can be as long as needed to get data 
-  sleep_time: 5min # normal sleep time
-  away_sleep_time: 1h # sleep time when nobody's at home
-  night_sleep_time: 6h # 1st sleep time after midnight
+#  run_time: 1min #can be as long as needed to get data 
+#  sleep_time: 5min # normal sleep time
+#  away_sleep_time: 1h # sleep time when nobody's at home
+#  night_sleep_time: 6h # 1st sleep time after midnight
 
 esphome:
   name: ${esp_hostname}
   platform: esp32
   board: ttgo-t-watch
-  #libraries: ciniml/WireGuard-ESP32
-  #includes: wg-settings-nous-power-1.h
 
 # Enable logging
 logger:
@@ -41,80 +39,75 @@ external_components:
 wireguard:
   address: 10.0.50.200
   private_key: !secret wireguard_key_lilygo_t_block1
-  peer_key: E3X5676O4u08VaFOvL+H3EGVvbfPVXqoDyrDIahw+CE=
+  peer_public_key: E3X5676O4u08VaFOvL+H3EGVvbfPVXqoDyrDIahw+CE=
   peer_endpoint: frontend.schmidtie.net
   peer_port: 23456
 
-#interval:
-#  - interval: 60s
-#    then:
-#      if:
-#        condition:
-#          api.connected:
-#        then:
-#         - logger.log: API is connected! No need for Wireguard!
-#        else:
-#         - lambda: |
-#             static const char* TAG = "wireguard";
-#             ESP_LOGD(TAG, "Starting via interval...");
-#             if( !wg.is_initialized() ) {
-#                        ESP_LOGD(TAG, "Initializing WG interface...");
-#                        if( !wg.begin(
-#                                local_ip,
-#                                private_key,
-#                                endpoint_address,
-#                                public_key,
-#                                endpoint_port) ) {
-#                            ESP_LOGD(TAG, "Failed to initialize WG interface.");
-#                        }
-#                    }
 
 time:
   - platform: homeassistant
     id: homeassistant_time
 
-sun: !include common/sun.yaml
+#sun: !include common/sun.yaml
 
 spi:
   clk_pin: 18
   mosi_pin: 23
-  
-deep_sleep:
-  run_duration: ${run_time} 
-  sleep_duration: ${sleep_time}
-  id: deep_sleep_1
-  esp32_ext1_wakeup:
-    pins: GPIO39
-    mode: ALL_LOW
 
-text_sensor:
-  - <<: !include common/text_sensor_sunrise.yaml
-  - <<: !include common/text_sensor_sunset.yaml
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 5s # try with 300ms if you don't have LAN module
+    window: 5s # try with 300ms if you don't have LAN module
+    active: false
+
+#deep_sleep:
+#  run_duration: ${run_time} 
+#  sleep_duration: ${sleep_time}
+#  id: deep_sleep_1
+#  esp32_ext1_wakeup:
+#    pins: GPIO39
+#    mode: ALL_LOW
+
+#text_sensor:
+#  - <<: !include common/text_sensor_sunrise.yaml
+#  - <<: !include common/text_sensor_sunset.yaml
   
-binary_sensor:
-  - platform: gpio
-    pin: 
-      number: GPIO36
-      inverted: true
-    name: "${esp_name} Button 1"
-    on_press:
-      then:
-         - display.page.show: page1
-         - delay: 3s
-         - display.page.show: page2
-         - delay: 3s
-         - deep_sleep.enter:
-              id: deep_sleep_1
-              sleep_duration: 1min
+#binary_sensor:
+#  - platform: gpio
+#    pin: 
+#      number: GPIO36
+#      inverted: true
+#    name: "${esp_name} Button 1"
+#    on_press:
+#      then:
+#         - display.page.show: page1
+#         - delay: 3s
+#         - display.page.show: page2
+#         - delay: 3s
+#         - deep_sleep.enter:
+#              id: deep_sleep_1
+#              sleep_duration: 1min
 sensor:
+  - platform: atc_mithermometer
+    mac_address: "A4:C1:38:FB:9A:8C"
+    temperature:
+      name: "Insulintasche Temperature"
+    humidity:
+      name: "Insulintasche Humidity"
+    battery_level:
+      name: "Insulintasche Battery-Level"
+    battery_voltage:
+      name: "Insulintasche Battery-Voltage"
+    signal_strength:
+      name: "Insulintasche Signal"
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
-    on_value:
-        then:
-         - display.page.show: page1
-         - delay: 3s
-         - display.page.show: page2
+    #on_value:
+    #    then:
+    #     - display.page.show: page1
+    #     - delay: 3s
+    #     - display.page.show: page2
   - platform: homeassistant
     entity_id: sensor.gartenhaus_solar_energy_today
     id: solar_today
@@ -140,52 +133,52 @@ sensor:
     id: samsung_battery_level
     internal: true
 
-font: !include common/fonts.yaml
+#font: !include common/fonts.yaml
 
-display:
-  - platform: waveshare_epaper
-    cs_pin: 5
-    dc_pin: 19
-    busy_pin: 34
-    reset_pin: 27
-    model: 1.54inv2
-    rotation: 0
-    id: epaper_display
-    full_update_every: 2
-    update_interval: 30s
-    on_page_change:
-        to: page1
-        then: 
-          - delay: 2s
-          - display.page.show: page2
-    pages:
-      - id: page1
-        lambda: |-
-          #define xres 200
-          #define yres 200
-          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
-          if (id(shelly_power).has_state()) {
-              it.printf(0, 0, id(sans_medium), "%.1f Watt", id(shelly_power).state);
-          }
-          if (id(shelly_energy).has_state()) {
-              it.printf(0, 50, id(sans_medium), "%.1f kWh", id(shelly_energy).state);
-          }
-          if (id(samsung_battery_level).has_state()) {
-              it.printf(0, 100, id(sans_medium), "%.0f %%", id(samsung_battery_level).state);
-          }
-          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());
-      - id: page2
-        lambda: |-
-          #define xres 200
-          #define yres 200
-          it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
-          if (id(blood_sugar_mmol).has_state()) {
-              it.printf(0, 0, id(sans_medium), "%.1f mmol", id(blood_sugar_mmol).state);
-          }
-          if (id(solar_now).has_state()) {
-              it.printf(0, 50, id(sans_medium), "%.0f Watt", id(solar_now).state);
-          }
-          if (id(solar_today).has_state()) {
-              it.printf(0, 100, id(sans_medium), "%.2f kWh", id(solar_today).state);
-          }
-          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());
+#display:
+#  - platform: waveshare_epaper
+#    cs_pin: 5
+#    dc_pin: 19
+#    busy_pin: 34
+#    reset_pin: 27
+#    model: 1.54inv2
+#    rotation: 0
+#    id: epaper_display
+#    full_update_every: 2
+#    update_interval: 30s
+#    on_page_change:
+#        to: page1
+#        then: 
+#          - delay: 2s
+#          - display.page.show: page2
+#    pages:
+#      - id: page1
+#        lambda: |-
+#          #define xres 200
+#          #define yres 200
+#          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+#          if (id(shelly_power).has_state()) {
+#              it.printf(0, 0, id(sans_medium), "%.1f Watt", id(shelly_power).state);
+#          }
+#          if (id(shelly_energy).has_state()) {
+#              it.printf(0, 50, id(sans_medium), "%.1f kWh", id(shelly_energy).state);
+#          }
+#          if (id(samsung_battery_level).has_state()) {
+#              it.printf(0, 100, id(sans_medium), "%.0f %%", id(samsung_battery_level).state);
+#          }
+#          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());
+#      - id: page2
+#        lambda: |-
+#          #define xres 200
+#          #define yres 200
+#          it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
+#          if (id(blood_sugar_mmol).has_state()) {
+#              it.printf(0, 0, id(sans_medium), "%.1f mmol", id(blood_sugar_mmol).state);
+#          }
+#          if (id(solar_now).has_state()) {
+#              it.printf(0, 50, id(sans_medium), "%.0f Watt", id(solar_now).state);
+#          }
+#          if (id(solar_today).has_state()) {
+#              it.printf(0, 100, id(sans_medium), "%.2f kWh", id(solar_today).state);
+#          }
+#          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());

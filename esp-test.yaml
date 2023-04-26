@@ -1,8 +1,8 @@
 substitutions:
-    # Set the MAC address of your device here
-  mac_address: F7:C6:E1:0C:83:C7
-  transmitter_id: 8WD8QU
-  use_alternative_bt_channel: "False"
+  # Set the MAC address of your device here
+  mac_address: !secret dexcom_mac
+  transmitter_id: !secret dexcom_transmitter_id
+  use_alternative_bt_channel: "false"
   esp_name: esp-test #Device Name
   esp_hostname: esp-test
   run_time: 999h #can be as long as needed to get data 
@@ -22,15 +22,8 @@ esphome:
 #  peer_port: 23456
 
 external_components:
-  # https://github.com/esphome/esphome/pull/4258
-  - source: github://pr#4258
-    components: [ble_client, esp32_ble, esp32_ble_client, esp32_ble_tracker]
-    refresh: always
   - source: github://Fabian-Schmidt/esphome-dexcom
     refresh: always
-  # - source:
-  #       type: local
-  #       path: components
 
 esp32:
   board: wemos_d1_mini32
@@ -41,24 +34,33 @@ logger:
   # level: DEBUG
 
 esp32_ble:
-  io_capability: keyboard_only
 
 ble_client:
   - mac_address: ${mac_address}
     id: dexcom_ble_client_id
-    on_passkey_request:
-      then:
-        - ble_client.passkey_reply:
-            id: dexcom_ble_client_id
-            passkey: 123456
 
 sensor:
   - platform: dexcom
     ble_client_id: dexcom_ble_client_id
     transmitter_id: ${transmitter_id}
     use_alternative_bt_channel: ${use_alternative_bt_channel}
+    glucose_in_mg_dl:
+      name: Glucose in mg/dl
+    glucose_in_mmol_l:
+      name: Glucose in mmol/l
 
 wifi:
+  use_address: 10.11.30.123
+  networks:
+  - ssid: eduroam
+    eap:
+      identity: !secret eduroam_user
+      username: !secret eduroam_user
+      password: !secret eduroam_password    
+      certificate_authority: ca_cert.pem
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
+
   #ssid: eduroam
   #use_address: 10.0.50.20
   #eap:
@@ -66,9 +68,9 @@ wifi:
   #    username: !secret eduroam_user
   #    password: !secret eduroam_password    
   #    certificate_authority: ca_cert.pem
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  #use_address: 10.11.30.111
+#  ssid: !secret wifi_ssid
+#  password: !secret wifi_password
+
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:

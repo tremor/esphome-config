@@ -56,7 +56,7 @@ font: !include common/fonts.yaml
 
 binary_sensor:
   - platform: homeassistant
-    entity_id: switch.tasmota_e868e7469f95_switch_relay_1
+    entity_id: switch.hwr_blitzwolf_flsunq5
     id: flsunq5_switch
     #on_state:
     #  - display.page.show: !lambda |-
@@ -76,8 +76,8 @@ sensor:
     #    then:
     #    - display.page.show: page3
   - platform: homeassistant
-    entity_id: sensor.ender5_hotend_actual
-    id: ender5_hotend_actual
+    entity_id: sensor.sapphire_nozzletemp
+    id: sapphire_nozzletemp
     on_value_range:
       - above: 50
         then:
@@ -86,11 +86,11 @@ sensor:
         then:
         - display.page.show: page1
   - platform: homeassistant
-    entity_id:  sensor.ender5_current_progress
-    id: ender5_current_progress
+    entity_id:  sensor.sapphire_current_progress
+    id: sapphire_current_progress
   - platform: homeassistant
-    entity_id: sensor.flsunq5_hotend_actual
-    id: flsunq5_hotend_actual
+    entity_id: sensor.flsunq5_nozzletemp
+    id: flsunq5_nozzletemp
     #on_value_range:
     #  - above: 50
     #    then:
@@ -102,17 +102,17 @@ sensor:
     entity_id: sensor.flsunq5_current_progress
     id: flsunq5_current_progress
   - platform: homeassistant
-    entity_id: sensor.humidity_158d0002c8e3d8
+    entity_id: sensor.lumi_lumi_weather_194ca006_humidity
     id: sensor_aktive_box
   - platform: homeassistant
     entity_id: sensor.humidity_158d0002c7737f
     id: sensor_lagerbox
   - platform: homeassistant
-    entity_id: sensor.flsunq5_bed_actual
-    id: flsunq5_bed_actual
+    entity_id: sensor.flsunq5_bedtemp
+    id: flsunq5_bedtemp
   - platform: homeassistant
-    entity_id: sensor.ender5_bed_actual
-    id: ender5_bed_actual
+    entity_id: sensor.sapphire_bedtemp
+    id: sapphire_bedtemp
   - platform: homeassistant
     entity_id: sensor.lumi_lumi_sens_temperature
     id: petg_aktive_box_temperature
@@ -151,12 +151,12 @@ display:
           it.printf(128, 0, id(sans_medium_15), TextAlign::TOP_RIGHT, "R2:%.0fg", id(filamentrolle_rechts).state);
           it.printf(0, 15, id(sans_medium_15), TextAlign::TOP_LEFT, "aktiv:%.0f%%", id(petg_aktive_box_temperature).state);
           it.printf(0, 30, id(sans_medium_15), TextAlign::TOP_LEFT, "pass.: %.0f%%", id(petg_passive_box_humidity).state);
-          it.printf(0, 45, id(sans_medium_15), TextAlign::TOP_LEFT, "E5:%.0f°C, Q5:%.0f°C", id(ender5_bed_actual).state, id(flsunq5_bed_actual).state);
+          it.printf(0, 45, id(sans_medium_15), TextAlign::TOP_LEFT, "E5:%.0f°C, Q5:%.0f°C", id(sapphire_bedtemp).state, id(flsunq5_bedtemp).state);
       - id: page2
         lambda: |-
-          it.printf(0, 0, id(sans_medium_10), "E5: %.0f%%, H: %.0f°C, B:%.0f°C", id(ender5_current_progress).state, id(ender5_hotend_actual).state, id(ender5_bed_actual).state);
+          it.printf(0, 0, id(sans_medium_10), "Sap: %.0f%%, H: %.0f°C, B:%.0f°C", id(sapphire_current_progress).state, id(sapphire_nozzletemp).state, id(sapphire_bedtemp).state);
           it.printf(0, 15, id(sans_medium_10), "Zeit: %s, R1: %.0f%g", id(ender5_time_remaining).state.c_str(),id(filamentrolle_links).state);
-          it.printf(0, 30, id(sans_medium_10), "Q5: %.0f%%, H: %.0f°C, B: %.0f°C", id(flsunq5_current_progress).state, id(flsunq5_hotend_actual).state, id(flsunq5_bed_actual).state);
+          it.printf(0, 30, id(sans_medium_10), "Q5: %.0f%%, H: %.0f°C, B: %.0f°C", id(flsunq5_current_progress).state, id(flsunq5_nozzletemp).state, id(flsunq5_bedtemp).state);
           it.printf(0, 45, id(sans_medium_10), "Zeit: %s, R2: %.0f%%", id(flsunq5_time_remaining).state.c_str(), id(filamentrolle_rechts).state);
           it.printf(0, 60, id(sans_medium_10), "A-Box: %.0f%%, Lagerbox: %.0f%%", id(sensor_aktive_box).state, id(sensor_lagerbox).state);
       - id: page3

@@ -78,8 +78,8 @@ sensor:
     filters:
       - multiply: -1
       - calibrate_linear:
-          - -182428 -> 0
-          - -249871 -> 171
+          - -173124 -> 0
+          #- -249871 -> 171
           - -499868 -> 795
     unit_of_measurement: g
     internal: false

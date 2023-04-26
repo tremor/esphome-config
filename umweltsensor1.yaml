@@ -35,25 +35,7 @@ text_sensor:
 deep_sleep:
   id: deep_sleep_1
 
-time:
-  - platform: sntp
-    on_time_sync:
-        then:
-        - lambda: |
-            static const char* TAG = "wireguard";
-            ESP_LOGD(TAG, "Starting...");
-            if( !wg.is_initialized() ) {
-                        ESP_LOGD(TAG, "Initializing WG interface...");
-                        if( !wg.begin(
-                                local_ip,
-                                private_key,
-                                endpoint_address,
-                                public_key,
-                                endpoint_port) ) {
-                            ESP_LOGD(TAG, "Failed to initialize WG interface.");
-                        }
-                    }
-
+time: !include common/time.yaml
 
 globals:
 
