@@ -131,6 +131,42 @@ uart:
     baud_rate: 9600
   
 sensor:
+  - platform: xiaomi_hhccjcy01
+    mac_address: '5c:85:7e:b0:89:e8'
+    temperature:
+      name: "Pflanzensensor 1 Temperature"
+    moisture:
+      name: "Pflanzensensor 1 Moisture"
+    illuminance:
+      name: "Pflanzensensor 1 Illuminance"
+    conductivity:
+      name: "Pflanzensensor 1 Soil Conductivity"
+    battery_level:
+      name: "Pflanzensensor 1 Battery Level"
+  - platform: xiaomi_hhccjcy01
+    mac_address: '5c:85:7e:b0:89:da'
+    temperature:
+      name: "Pflanzensensor 2 Temperature"
+    moisture:
+      name: "Pflanzensensor 2 Moisture"
+    illuminance:
+      name: "Pflanzensensor 2 Illuminance"
+    conductivity:
+      name: "Pflanzensensor 2 Soil Conductivity"
+    battery_level:
+      name: "Pflanzensensor 2 Battery Level"
+  - platform: xiaomi_hhccjcy01
+    mac_address: '5c:85:7e:b0:89:d8'
+    temperature:
+      name: "Pflanzensensor 3 Temperature"
+    moisture:
+      name: "Pflanzensensor 3 Moisture"
+    illuminance:
+      name: "Pflanzensensor 3 Illuminance"
+    conductivity:
+      name: "Pflanzensensor 3 Soil Conductivity"
+    battery_level:
+      name: "Pflanzensensor 3 Battery Level"
   - platform: internal_temperature
     name: "Internal Temperature"
   - platform: mhz19
@@ -269,6 +305,22 @@ sensor:
          window_size: 15
          send_every: 15
       - filter_out: 0.0
+
+
+binary_sensor:
+  - platform: xiaomi_mjyd02yla
+    name: "Nachtlicht"
+    mac_address: "DC:ED:83:89:2E:99"
+    bindkey: "18651e8593e94f0a0a9cb0006e6708aa"
+    idle_time:
+      name: "Dachboden Nachtlicht Idle Time"
+    light:
+      name: "Dachboden Nachtlicht Light Status"
+    battery_level:
+      name: "Dachboden Nachtlicht Battery Level"
+    illuminance:
+      name: "Dachboden Nachtlicht Illuminance"
+      
 switch:    
   - platform: template
     name: "OLED Display"

@@ -1,19 +1,47 @@
 substitutions:
   esp_name: ESP T-Block Display #Device Name
   esp_hostname: ttgo-tblock1
+  transmitter_id: !secret dexcom_transmitter_id
+  use_alternative_bt_channel: "false"
+  sleep_time: 1min # normal sleep time
 #  run_time: 1min #can be as long as needed to get data 
 #  sleep_time: 5min # normal sleep time
 #  away_sleep_time: 1h # sleep time when nobody's at home
 #  night_sleep_time: 6h # 1st sleep time after midnight
 
+external_components:
+  - source: github://Fabian-Schmidt/esphome-dexcom
+    refresh: always
+#  - source: github://pr#4256
+#    components: [ wireguard ]
+
 esphome:
   name: ${esp_hostname}
-  platform: esp32
+  platformio_options:
+    upload_speed: 2000000
+    board_build.f_flash: 80000000L
+    board_build.partitions: default_16MB.csv
+    board_upload.flash_size: 16MB
+    board_upload.maximum_ram_size: 327680
+    board_upload.maximum_size: 16777216
+
+esp32: 
   board: ttgo-t-watch
+#  framework:
+#    type: esp-idf
+#    version: recommended
+#    # Custom sdkconfig options
+#    sdkconfig_options:
+#      CONFIG_COMPILER_OPTIMIZATION_SIZE: y
+#    # Advanced tweaking options
+#    advanced:
+#      ignore_efuse_mac_crc: false
 
 # Enable logging
 logger:
 
+psram:
+  
 # Enable Home Assistant API
 api:
   encryption:
@@ -22,31 +50,32 @@ api:
 ota:
   password: !secret password
 
+mqtt: !include common/mqtt.yaml
+
 wifi:
   networks:
-  - ssid: !secret wifi_ssid_hotspot
+  - ssid: www.schmidtie.net
     password: !secret wifi_hotspot_password
-  - ssid: "eduroam"
-    eap:
-      username: !secret eduroam_user
-      password: !secret eduroam_password
   #use_address: 139.30.9.63
-  use_address: 10.0.50.200
-      
-external_components:
-  - source: github://pr#4256
-    components: [ wireguard ]
-wireguard:
-  address: 10.0.50.200
-  private_key: !secret wireguard_key_lilygo_t_block1
-  peer_public_key: E3X5676O4u08VaFOvL+H3EGVvbfPVXqoDyrDIahw+CE=
-  peer_endpoint: frontend.schmidtie.net
-  peer_port: 23456
+  #use_address: 10.0.50.200
+  use_address: 10.10.10.61
 
+#wireguard:
+#  address: 10.0.50.200
+#  private_key: !secret wireguard_key_lilygo_t_block1
+#  peer_public_key: E3X5676O4u08VaFOvL+H3EGVvbfPVXqoDyrDIahw+CE=
+#  peer_endpoint: frontend.schmidtie.net
+#  peer_port: 23456
+
+esp32_ble_tracker:
+  scan_parameters:
+    interval: 10ms
+    window: 10ms
+    active: false # true
 
 time:
-  - platform: homeassistant
-    id: homeassistant_time
+  - platform: sntp
+    id: sntp_time
 
 #sun: !include common/sun.yaml
 
@@ -54,60 +83,104 @@ spi:
   clk_pin: 18
   mosi_pin: 23
 
-esp32_ble_tracker:
-  scan_parameters:
-    interval: 5s # try with 300ms if you don't have LAN module
-    window: 5s # try with 300ms if you don't have LAN module
-    active: false
+dexcom_ble_client:
+  id: dexcom_ble_client_id
+  transmitter_id: ${transmitter_id}
+  use_alternative_bt_channel: ${use_alternative_bt_channel}
+  # mac_address: ${mac_address}
+  on_disconnect:
+      then:
+         - delay: 5s
+         - display.page.show: page2
+         - component.update: epaper_display
+         - delay: 5s
+         - deep_sleep.enter:
+              sleep_duration: 4.5min
+  #  - deep_sleep.enter:
+        # Every 5 minutes Dexcom sensor wakes up.
+        # Pre wake up connect to WiFi and MQTT.
+  #      sleep_duration: 4.9min
 
-#deep_sleep:
+deep_sleep:
 #  run_duration: ${run_time} 
 #  sleep_duration: ${sleep_time}
-#  id: deep_sleep_1
-#  esp32_ext1_wakeup:
-#    pins: GPIO39
-#    mode: ALL_LOW
+  id: deep_sleep_1
+  esp32_ext1_wakeup:
+    pins: GPIO36
+    mode: ALL_LOW
 
-#text_sensor:
-#  - <<: !include common/text_sensor_sunrise.yaml
-#  - <<: !include common/text_sensor_sunset.yaml
-  
-#binary_sensor:
-#  - platform: gpio
-#    pin: 
-#      number: GPIO36
-#      inverted: true
-#    name: "${esp_name} Button 1"
-#    on_press:
-#      then:
-#         - display.page.show: page1
-#         - delay: 3s
-#         - display.page.show: page2
-#         - delay: 3s
-#         - deep_sleep.enter:
-#              id: deep_sleep_1
-#              sleep_duration: 1min
+text_sensor:
+  - platform: dexcom_ble_client
+    type: STATUS
+    name: Status
+  - platform: dexcom_ble_client
+    type: CALIBRATION_STATE
+    name: Calibration state
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 36
+      mode:
+        input: true
+    name: Button1
+    id: button1
+    on_press:
+      then:
+         - display.page.show: page1
+         - component.update: epaper_display
+  - platform: dexcom_ble_client
+    type: SENSOR_LOW_BATTERY
+    name: Sensor low battery
+  - platform: dexcom_ble_client
+    type: SENSOR_OKAY
+    name: Sensor okay
+  - platform: dexcom_ble_client
+    type: SENSOR_FAILED
+    name: Sensor failed
+  - platform: dexcom_ble_client
+    type: SENSOR_STOPPED
+    name: Sensor stopped
+  - platform: dexcom_ble_client
+    type: SENSOR_TRANSITIONAL
+    name: Sensor transitional
+
 sensor:
-  - platform: atc_mithermometer
-    mac_address: "A4:C1:38:FB:9A:8C"
-    temperature:
-      name: "Insulintasche Temperature"
-    humidity:
-      name: "Insulintasche Humidity"
-    battery_level:
-      name: "Insulintasche Battery-Level"
-    battery_voltage:
-      name: "Insulintasche Battery-Voltage"
-    signal_strength:
-      name: "Insulintasche Signal"
+  - platform: dexcom_ble_client
+    type: GLUCOSE_IN_MG_DL
+    name: glucose_in_mg/dl
+    expire_after: 10.5min # if using mqtt recommendation to set `expire_after` option.
+  - platform: dexcom_ble_client
+    type: GLUCOSE_IN_MMOL_L
+    name: Glucose in mmol/l
+    id: glucose_in_mmol  
+    expire_after: 10.5min
+  - platform: dexcom_ble_client
+    type: GLUCOSE_TREND
+    name: Glucose trend
+  - platform: dexcom_ble_client
+    type: GLUCOSE_PREDICT_IN_MG_DL
+    name: Glucose predict in mg/dl
+  - platform: dexcom_ble_client
+    type: GLUCOSE_PREDICT_IN_MMOL_L
+    name: Glucose predict in mmol/l
+  - platform: dexcom_ble_client
+    type: SENSOR_AGE
+    name: Sensor age
+  - platform: dexcom_ble_client
+    type: SENSOR_SESSION_AGE
+    name: Sensor Session age
+    id: sensor_session_age
+  - platform: dexcom_ble_client
+    type: SENSOR_REMAINING_LIFETIME
+    name: sensor_remaining_lifetime
+  - platform: dexcom_ble_client
+    type: SENSOR_SESSION_REMAINING_LIFETIME
+    name: Sensor session remaining lifetime
   - platform: homeassistant
     entity_id: sensor.blood_sugar_mmol
     id: blood_sugar_mmol
-    #on_value:
-    #    then:
-    #     - display.page.show: page1
-    #     - delay: 3s
-    #     - display.page.show: page2
+
   - platform: homeassistant
     entity_id: sensor.gartenhaus_solar_energy_today
     id: solar_today
@@ -117,68 +190,52 @@ sensor:
     id: solar_now
     internal: true
   - platform: homeassistant
-    entity_id: sensor.shelly_plug_plus_s_power_2
-    id: shelly_power
-    internal: true
-  - platform: homeassistant
-    entity_id: sensor.shelly_plug_plus_s_temperature
-    id: shelly_temperature
-    internal: true
-  - platform: homeassistant
-    entity_id: sensor.shelly_plug_plus_s_daily_energy_2
-    id: shelly_energy
-    internal: true
-  - platform: homeassistant
     entity_id: sensor.samsung_galaxy_s20_5g_battery_level
     id: samsung_battery_level
     internal: true
 
-#font: !include common/fonts.yaml
+font: !include common/fonts.yaml
 
-#display:
-#  - platform: waveshare_epaper
-#    cs_pin: 5
-#    dc_pin: 19
-#    busy_pin: 34
-#    reset_pin: 27
-#    model: 1.54inv2
-#    rotation: 0
-#    id: epaper_display
-#    full_update_every: 2
-#    update_interval: 30s
-#    on_page_change:
-#        to: page1
-#        then: 
-#          - delay: 2s
-#          - display.page.show: page2
-#    pages:
-#      - id: page1
-#        lambda: |-
-#          #define xres 200
-#          #define yres 200
-#          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
-#          if (id(shelly_power).has_state()) {
-#              it.printf(0, 0, id(sans_medium), "%.1f Watt", id(shelly_power).state);
-#          }
-#          if (id(shelly_energy).has_state()) {
-#              it.printf(0, 50, id(sans_medium), "%.1f kWh", id(shelly_energy).state);
-#          }
-#          if (id(samsung_battery_level).has_state()) {
-#              it.printf(0, 100, id(sans_medium), "%.0f %%", id(samsung_battery_level).state);
-#          }
-#          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());
-#      - id: page2
-#        lambda: |-
-#          #define xres 200
-#          #define yres 200
-#          it.filled_rectangle(1, 1, xres-1, yres-1, COLOR_OFF);
-#          if (id(blood_sugar_mmol).has_state()) {
-#              it.printf(0, 0, id(sans_medium), "%.1f mmol", id(blood_sugar_mmol).state);
-#          }
-#          if (id(solar_now).has_state()) {
-#              it.printf(0, 50, id(sans_medium), "%.0f Watt", id(solar_now).state);
-#          }
-#          if (id(solar_today).has_state()) {
-#              it.printf(0, 100, id(sans_medium), "%.2f kWh", id(solar_today).state);
-#          }
-#          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(homeassistant_time).now());
+display:
+  - platform: waveshare_epaper
+    cs_pin: 5
+    dc_pin: 19
+    busy_pin: 34
+    reset_pin: 27
+    model: 1.54inv2
+    rotation: 0
+    id: epaper_display
+    full_update_every: 2
+    update_interval: never
+    #on_page_change:
+    #    to: page1
+    #    then: 
+    #      - delay: 5s
+    #      - display.page.show: page2
+    pages:
+      - id: page1
+        lambda: |-
+          #define xres 200
+          #define yres 200
+          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+          if (id(samsung_battery_level).has_state()) {
+              it.printf(0, 100, id(sans_medium), "%.0f %%", id(samsung_battery_level).state);
+          }
+          if (id(glucose_in_mmol).has_state()) {
+              it.printf(0, 0, id(sans_medium), "%.1f mmol", id(glucose_in_mmol).state);
+          }
+          else {
+            it.printf(0, 0, id(sans_medium), "%.1f mmol", id(blood_sugar_mmol).state);
+            it.printf(0, 50, id(sans_medium), "NS");
+          } 
+          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(sntp_time).now());
+      - id: page2
+        lambda: |-
+          #define xres 200
+          #define yres 200
+          it.filled_rectangle(0, 0, xres, yres, COLOR_OFF);
+          if (id(glucose_in_mmol).has_state()) {
+              it.printf(0, 0, id(sans_medium), "%.1f mmol", id(glucose_in_mmol).state);
+              it.printf(0, 50, id(sans_medium), "Dexcom");
+          }
+          it.strftime(xres, yres, id(sans_medium_14), TextAlign::BOTTOM_RIGHT, "%Y-%m-%d %H:%M", id(sntp_time).now());

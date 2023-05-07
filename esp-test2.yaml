@@ -1,0 +1,64 @@
+substitutions:
+
+  esp_name: Gartenhaus-ESP32 #Device Name
+  esp_hostname: gartenhaus-esp2
+  run_time: 999h #can be as long as needed to get data 
+  sleep_time: 1min # normal sleep time
+
+esphome:
+  name: ${esp_hostname}
+
+esp32:
+  board: wemos_d1_mini32
+
+logger:
+  # level: VERBOSE
+  level: DEBUG
+  #level: INFO
+
+esp32_ble_tracker:
+#  scan_parameters:
+#    interval: 7s # try with 300ms if you don't have LAN module
+#    window: 5s # try with 300ms if you don't have LAN module
+#    active: true
+
+wifi:
+  use_address: 10.11.30.124
+  networks:
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+#  ap:
+#    ssid: "${esp_hostname}"
+#    password: !secret password
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  password: !secret password
+
+captive_portal:
+
+xiaomi_ble:
+
+sensor:
+  - platform: xiaomi_hhccjcy01
+    mac_address: '5c:85:7e:b0:89:e0'
+    temperature:
+      name: "Pflanzensenor 4 Temperature"
+    moisture:
+      name: "Pflanzensenor 4  Moisture"
+    illuminance:
+      name: "Pflanzensenor 4  Illuminance"
+    conductivity:
+      name: "Pflanzensenor 4  Soil Conductivity"
+    battery_level:
+      name: "Pflanzensenor 4  Battery Level"
+
+deep_sleep:
+  run_duration: ${run_time}
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
